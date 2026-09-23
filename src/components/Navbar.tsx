@@ -61,6 +61,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-zinc-500">SIZE:</span>
               <span className="text-zinc-200">{(parsedFont.metadata.fileSize / 1024).toFixed(1)} KB</span>
             </div>
+            {parsedFont.metadata.isVariable && (
+              <>
+                <span className="text-zinc-700">|</span>
+                <div className="flex items-center gap-1">
+                  <span className="px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-700 font-bold text-[10px] animate-pulse">
+                    VARIABLE ({parsedFont.variableAxes.length} AXES)
+                  </span>
+                </div>
+              </>
+            )}
             {parsedFont.features.length > 0 && (
               <>
                 <span className="text-zinc-700">|</span>

@@ -4,6 +4,7 @@ import { Sun, Moon, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'luc
 interface SpecimenSandboxProps {
   fontFamily: string;
   featureSettingsCss: string;
+  variationSettingsCss?: string;
 }
 
 const PRESET_PANGRAMS = [
@@ -30,6 +31,7 @@ const SCRIPT_TESTS = [
 export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
   fontFamily,
   featureSettingsCss,
+  variationSettingsCss = '"normal"',
 }) => {
   const [activeTab, setActiveTab] = useState<'type_yourself' | 'waterfall' | 'language_matrix'>('type_yourself');
   const [inputText, setInputText] = useState('The quick brown fox jumps over the lazy dog.');
@@ -185,6 +187,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
                 lineHeight: lineHeight,
                 textAlign: textAlign,
                 fontFeatureSettings: featureSettingsCss,
+                fontVariationSettings: variationSettingsCss,
               }}
               className="w-full bg-transparent border-none outline-none resize-y"
             />
@@ -205,6 +208,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
                   fontFamily: `'${fontFamily}', sans-serif`,
                   fontSize: `${size}px`,
                   fontFeatureSettings: featureSettingsCss,
+                  fontVariationSettings: variationSettingsCss,
                   lineHeight: 1.2,
                 }}
                 className="text-zinc-200 outline-none flex-1"
@@ -234,6 +238,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
                     fontSize: '22px',
                     lineHeight: 1.4,
                     fontFeatureSettings: featureSettingsCss,
+                    fontVariationSettings: variationSettingsCss,
                   }}
                   className="text-zinc-200 break-words py-2"
                 >

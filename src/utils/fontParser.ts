@@ -6,6 +6,7 @@ import type {
   GlyphDetail,
   OpenTypeFeature,
   VariableAxis,
+  VariableInstance,
   LigatureSubstitution,
   ParsedFontResult,
 } from '../types/font';
@@ -196,12 +197,34 @@ export async function parseFontFile(
   const fvar = font.tables.fvar;
   const isVariable = Boolean(fvar && fvar.axes && fvar.axes.length > 0);
   const variableAxes: VariableAxis[] = [];
+  const variableInstances: VariableInstance[] = [];
+
+  const KNOWN_AXIS_NAMES: Record<string, string> = {
+    wght: 'Weight',
+    wdth: 'Width',
+    slnt: 'Slant',
+    ital: 'Italic',
+    opsz: 'Optical size',
+    GRAD: 'Grade',
+    XTRA: 'Parametric Extra Width',
+    XOPQ: 'Parametric Opaque Width',
+    YOPQ: 'Parametric Opaque Height',
+    YTLC: 'Parametric Lowercase Height',
+    YTUC: 'Parametric Uppercase Height',
+    YTAS: 'Parametric Ascender Height',
+    YTDE: 'Parametric Descender Depth',
+  };
 
   if (isVariable && fvar.axes) {
-    fvar.axes.forEach((axis: { tag: string; name?: Record<string, string>; minValue: number; defaultValue: number; maxValue: number }) => {
-      const name = axis.name?.en || axis.tag;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fvar.axes.forEach((axis: any) => {
+      const tag = axis.tag;
+      let name = axis.name?.en;
+      if (!name && typeof axis.name === 'string') name = axis.name;
+      if (!name) name = KNOWN_AXIS_NAMES[tag] || tag.toUpperCase();
+
       variableAxes.push({
-        tag: axis.tag,
+        tag,
         name,
         min: axis.minValue,
         default: axis.defaultValue,
@@ -209,6 +232,22 @@ export async function parseFontFile(
         value: axis.defaultValue,
       });
     });
+
+    if (fvar.instances && Array.isArray(fvar.instances)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fvar.instances.forEach((inst: any) => {
+        let name = inst.name?.en;
+        if (!name && typeof inst.name === 'string') name = inst.name;
+        if (!name) name = `Instance ${variableInstances.length + 1}`;
+
+        if (inst.coordinates) {
+          variableInstances.push({
+            name,
+            coordinates: inst.coordinates,
+          });
+        }
+      });
+    }
   }
 
   // Extract Glyphs Detail
@@ -371,6 +410,7 @@ export async function parseFontFile(
     glyphs,
     features,
     variableAxes,
+    variableInstances,
     ligatures,
     fontFamilyCssName,
   };

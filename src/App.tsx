@@ -10,6 +10,7 @@ import { SpecimenSandbox } from './components/SpecimenSandbox';
 import { FeatureInspector } from './components/FeatureInspector';
 import { TableInspector } from './components/TableInspector';
 import { LayerExporterModal } from './components/LayerExporterModal';
+import { VariableAxesController } from './components/VariableAxesController';
 import {
   Type,
   Grid,
@@ -34,6 +35,9 @@ export const App: React.FC = () => {
   // OpenType Feature Toggles
   const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>({});
 
+  // Variable Font Axes Values
+  const [variationValues, setVariationValues] = useState<Record<string, number>>({});
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load a font buffer
@@ -50,6 +54,13 @@ export const App: React.FC = () => {
         initialToggles[f.tag] = f.enabled;
       });
       setFeatureToggles(initialToggles);
+
+      // Auto-detect and initialize Variable Font Axes
+      const initialAxes: Record<string, number> = {};
+      result.variableAxes.forEach(ax => {
+        initialAxes[ax.tag] = ax.default;
+      });
+      setVariationValues(initialAxes);
     } catch (err: unknown) {
       console.error('Failed to parse font file:', err);
       setError(
@@ -93,6 +104,34 @@ export const App: React.FC = () => {
 
   const handleToggleFeature = (tag: string, enabled: boolean) => {
     setFeatureToggles(prev => ({ ...prev, [tag]: enabled }));
+  };
+
+  // Compute CSS font-variation-settings string for Variable Fonts
+  const cssVariationString = useMemo(() => {
+    if (!parsedFont?.metadata.isVariable || parsedFont.variableAxes.length === 0) {
+      return '"normal"';
+    }
+    const parts = Object.entries(variationValues).map(
+      ([tag, val]) => `"${tag}" ${val}`
+    );
+    return parts.length > 0 ? parts.join(', ') : '"normal"';
+  }, [parsedFont, variationValues]);
+
+  const handleAxisChange = (tag: string, val: number) => {
+    setVariationValues(prev => ({ ...prev, [tag]: val }));
+  };
+
+  const handleSetCoordinates = (coords: Record<string, number>) => {
+    setVariationValues(prev => ({ ...prev, ...coords }));
+  };
+
+  const handleResetAxes = () => {
+    if (!parsedFont) return;
+    const defaults: Record<string, number> = {};
+    parsedFont.variableAxes.forEach(ax => {
+      defaults[ax.tag] = ax.default;
+    });
+    setVariationValues(defaults);
   };
 
   return (
@@ -238,11 +277,25 @@ export const App: React.FC = () => {
               </button>
             </div>
 
+            {/* Auto-detected Variable Font Axes Controller (appears whenever variable font is detected) */}
+            {parsedFont.metadata.isVariable && parsedFont.variableAxes.length > 0 && (
+              <VariableAxesController
+                axes={parsedFont.variableAxes}
+                instances={parsedFont.variableInstances}
+                values={variationValues}
+                onChange={handleAxisChange}
+                onSetCoordinates={handleSetCoordinates}
+                onReset={handleResetAxes}
+                cssVariationString={cssVariationString}
+              />
+            )}
+
             {/* Tab Views */}
             {activeTab === 'specimen' && (
               <SpecimenSandbox
                 fontFamily={parsedFont.fontFamilyCssName}
                 featureSettingsCss={cssFeatureString}
+                variationSettingsCss={cssVariationString}
               />
             )}
 

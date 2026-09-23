@@ -73,6 +73,11 @@ export interface LigatureSubstitution {
   byString: string;
 }
 
+export interface VariableInstance {
+  name: string;
+  coordinates: Record<string, number>;
+}
+
 export interface ParsedFontResult {
   font: opentype.Font;
   rawBuffer: ArrayBuffer;
@@ -80,6 +85,7 @@ export interface ParsedFontResult {
   glyphs: GlyphDetail[];
   features: OpenTypeFeature[];
   variableAxes: VariableAxis[];
+  variableInstances: VariableInstance[];
   ligatures: LigatureSubstitution[];
   fontFamilyCssName: string;
 }

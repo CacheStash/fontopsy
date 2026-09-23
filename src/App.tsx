@@ -96,7 +96,12 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
+    <div className="relative min-h-screen flex flex-col bg-zinc-950 text-zinc-100 overflow-x-hidden">
+      {/* Background Gradient Blurred Orbs (Inspired by subqifont, high-contrast neon on dark) */}
+      <div className="grain-orb-base orb-cyan-top pointer-events-none" />
+      <div className="grain-orb-base orb-violet-bottom pointer-events-none" />
+      <div className="grain-orb-base orb-center-ambient pointer-events-none hidden md:block" />
+
       {/* Hidden File Picker Input */}
       <input
         type="file"
@@ -124,32 +129,31 @@ export const App: React.FC = () => {
         onLoadSample={loadSampleFont}
       />
 
-      {/* Global Drag & Drop Overlay */}
-      <DropZone
-        onFileLoaded={handleLoadBuffer}
-        isLoading={isLoading}
-        hasFont={Boolean(parsedFont)}
-      />
+      {/* Main Content Area (relative z-10 over blurred orbs) */}
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+        {/* Full-width Drag & Drop Button Banner across main content */}
+        <DropZone
+          onFileLoaded={handleLoadBuffer}
+          isLoading={isLoading}
+        />
 
-      {/* Error Alert if parse fails */}
-      {error && (
-        <div className="max-w-4xl mx-auto my-4 p-4 rounded-xl bg-rose-950/70 border border-rose-500/60 text-rose-200 text-xs font-mono flex items-center gap-3">
-          <AlertCircle size={18} className="text-rose-400 flex-shrink-0" />
-          <div className="flex-1">
-            <span className="font-bold">Font Parsing Error: </span>
-            <span>{error}</span>
+        {/* Error Alert if parse fails */}
+        {error && (
+          <div className="w-full p-4 rounded-xl bg-rose-950/70 border border-rose-500/60 text-rose-200 text-xs font-mono flex items-center gap-3">
+            <AlertCircle size={18} className="text-rose-400 flex-shrink-0" />
+            <div className="flex-1">
+              <span className="font-bold">Font Parsing Error: </span>
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="px-2 py-1 rounded bg-rose-900/60 text-rose-300 hover:text-white"
+            >
+              Dismiss
+            </button>
           </div>
-          <button
-            onClick={() => setError(null)}
-            className="px-2 py-1 rounded bg-rose-900/60 text-rose-300 hover:text-white"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
         {isLoading && !parsedFont && (
           <div className="flex flex-col items-center justify-center p-20 text-zinc-400 font-mono text-sm">
             <Cpu size={36} className="animate-spin text-cyan-400 mb-3" />

@@ -1,37 +1,42 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { UploadCloud, FileType, ShieldCheck, Cpu } from 'lucide-react';
+import { UploadCloud, Cpu, ArrowUpRight } from 'lucide-react';
 
 interface DropZoneProps {
   onFileLoaded: (buffer: ArrayBuffer, fileName: string) => void;
   isLoading: boolean;
-  hasFont: boolean;
 }
 
 export const DropZone: React.FC<DropZoneProps> = ({
   onFileLoaded,
   isLoading,
-  hasFont,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [isWindowDragOver, setIsWindowDragOver] = useState(false);
+  const [isBannerHover, setIsBannerHover] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Global drag-and-drop listener across entire window
   useEffect(() => {
     const handleWindowDragOver = (e: DragEvent) => {
       e.preventDefault();
-      setIsDragOver(true);
+      setIsWindowDragOver(true);
     };
 
     const handleWindowDragLeave = (e: DragEvent) => {
       e.preventDefault();
-      if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
-        setIsDragOver(false);
+      if (
+        e.clientX <= 0 ||
+        e.clientY <= 0 ||
+        e.clientX >= window.innerWidth ||
+        e.clientY >= window.innerHeight
+      ) {
+        setIsWindowDragOver(false);
       }
     };
 
     const handleWindowDrop = (e: DragEvent) => {
       e.preventDefault();
-      setIsDragOver(false);
+      setIsWindowDragOver(false);
+      setIsBannerHover(false);
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         processFile(e.dataTransfer.files[0]);
       }
@@ -65,21 +70,9 @@ export const DropZone: React.FC<DropZoneProps> = ({
     }
   };
 
-  // If a font is already loaded and user is not actively dragging over, render nothing or a mini bar
-  if (hasFont && !isDragOver) {
-    return (
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleInputChange}
-        accept=".otf,.ttf,.woff,.woff2"
-        className="hidden"
-      />
-    );
-  }
-
   return (
     <>
+      {/* Hidden File Input */}
       <input
         type="file"
         ref={fileInputRef}
@@ -88,61 +81,84 @@ export const DropZone: React.FC<DropZoneProps> = ({
         className="hidden"
       />
 
-      {/* Full-screen drag overlay when dragging */}
-      {isDragOver && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 border-4 border-dashed border-cyan-400 animate-pulse">
+      {/* Full-Screen Drag-and-Drop Active Overlay */}
+      {isWindowDragOver && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 border-4 border-dashed border-cyan-400 animate-pulse pointer-events-none">
           <UploadCloud size={64} className="text-cyan-400 mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold font-mono text-cyan-300">DROP FONT TO DISSECT</h2>
+          <h2 className="text-2xl font-bold font-mono text-cyan-300 tracking-wider">
+            RELEASE FONT TO DISSECT
+          </h2>
           <p className="text-zinc-400 font-mono text-sm mt-2">
-            Release `.otf`, `.ttf`, `.woff`, or `.woff2` to parse in-memory
+            In-memory forensic parsing for `.otf`, `.ttf`, `.woff`, `.woff2`
           </p>
         </div>
       )}
 
-      {/* Initial Hero Dropzone if no font is loaded */}
-      {!hasFont && (
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="relative max-w-3xl mx-auto my-12 p-10 rounded-2xl lab-card border-2 border-dashed border-zinc-700 hover:border-cyan-500/60 transition-all cursor-pointer group text-center"
-        >
-          <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-zinc-900 border border-zinc-800 group-hover:border-cyan-500/50 flex items-center justify-center text-cyan-400 transition-transform group-hover:scale-110">
+      {/* Main Content Full-Width Drag & Drop Banner */}
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={e => {
+          e.preventDefault();
+          setIsBannerHover(true);
+        }}
+        onDragLeave={() => setIsBannerHover(false)}
+        onDrop={e => {
+          e.preventDefault();
+          setIsBannerHover(false);
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            processFile(e.dataTransfer.files[0]);
+          }
+        }}
+        className={`w-full p-4 sm:p-5 rounded-2xl cursor-pointer transition-all duration-200 group lab-card flex flex-col sm:flex-row items-center justify-between gap-4 border-2 border-dashed ${
+          isBannerHover
+            ? 'border-cyan-400 bg-cyan-950/30 shadow-[0_0_30px_rgba(6,182,212,0.25)] scale-[1.01]'
+            : 'border-zinc-700/80 hover:border-cyan-500/60 hover:bg-zinc-900/60'
+        }`}
+      >
+        {/* Left Side: Upload Icon & Title */}
+        <div className="flex items-center gap-4 text-center sm:text-left">
+          <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-700/80 group-hover:border-cyan-500/60 flex items-center justify-center text-cyan-400 flex-shrink-0 transition-transform group-hover:scale-105 shadow-inner">
             {isLoading ? (
-              <Cpu size={32} className="animate-spin text-cyan-400" />
+              <Cpu size={24} className="animate-spin text-cyan-400" />
             ) : (
-              <UploadCloud size={32} />
+              <UploadCloud size={24} />
             )}
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Drop your font file here to inspect
-          </h2>
-          <p className="text-zinc-400 text-sm mt-2 max-w-md mx-auto">
-            Drag & drop any font file or click to browse. Instant client-side parsing with zero server uploads.
-          </p>
+          <div>
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <span className="font-mono font-bold text-sm sm:text-base text-white tracking-wide group-hover:text-cyan-300 transition-colors">
+                DRAG & DROP FONT FILE HERE
+              </span>
+              <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-semibold">
+                CLICK TO BROWSE
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 font-mono mt-0.5">
+              Instant in-memory parsing for <span className="text-zinc-200">.OTF</span>, <span className="text-zinc-200">.TTF</span>, <span className="text-zinc-200">.WOFF</span>, <span className="text-zinc-200">.WOFF2</span> with zero server uploads
+            </p>
+          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
-            {['.OTF', '.TTF', '.WOFF', '.WOFF2'].map(fmt => (
+        {/* Right Side: Format Badges & Action Prompt */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="hidden lg:flex items-center gap-1.5">
+            {['.OTF', '.TTF', '.WOFF', '.WOFF2'].map(ext => (
               <span
-                key={fmt}
-                className="px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300 group-hover:border-zinc-700"
+                key={ext}
+                className="px-2 py-1 rounded bg-zinc-900/90 border border-zinc-800 text-[10px] font-mono text-zinc-400 group-hover:border-zinc-700"
               >
-                {fmt}
+                {ext}
               </span>
             ))}
           </div>
 
-          <div className="mt-8 pt-6 border-t border-zinc-800/80 flex flex-wrap items-center justify-center gap-6 text-xs text-zinc-500 font-mono">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck size={14} className="text-emerald-400" />
-              100% In-Memory Forensic Parsing
-            </span>
-            <span className="flex items-center gap-1.5">
-              <FileType size={14} className="text-cyan-400" />
-              Brotli/WOFF2 Wasm Decompression
-            </span>
+          <div className="px-3.5 py-1.5 rounded-xl bg-cyan-500/10 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-black border border-cyan-500/40 font-mono text-xs font-bold transition-all flex items-center gap-1">
+            <span>CHOOSE FILE</span>
+            <ArrowUpRight size={14} />
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 };

@@ -5,6 +5,7 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: #09090b;
     color: #f4f4f5;
+    overflow-x: hidden;
   }
 
   code, pre, .font-mono {
@@ -30,20 +31,99 @@
 
 /* Glass & Card styles */
 .lab-card {
-  background: rgba(18, 18, 23, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(39, 39, 42, 0.8);
+  background: rgba(18, 18, 24, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(63, 63, 70, 0.6);
 }
 
 .lab-card-hover:hover {
-  border-color: rgba(6, 182, 212, 0.4);
-  box-shadow: 0 4px 20px -4px rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 4px 25px -4px rgba(6, 182, 212, 0.18);
+}
+
+/* Gradient Blurred Orbs with Grain Texture (Inspired by subqifont, high-contrast neon on dark) */
+.grain-orb-base {
+  position: fixed;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  width: 75vw;
+  height: 75vw;
+  min-width: 600px;
+  min-height: 600px;
+  background-blend-mode: overlay, normal;
+  will-change: transform, opacity;
+}
+
+/* 1. Neon Electric Cyan Orb (Top-Right) */
+.orb-cyan-top {
+  top: 0;
+  right: 0;
+  transform: translate(30%, -30%);
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.16'/%3E%3C/svg%3E"),
+    radial-gradient(circle, rgba(0, 240, 255, 0.42) 0%, rgba(6, 182, 212, 0.25) 35%, rgba(14, 165, 233, 0.1) 60%, transparent 75%);
+  filter: blur(80px);
+  animation: orb-breathe-1 12s infinite ease-in-out alternate;
+}
+
+/* 2. Neon Ultraviolet Orb (Bottom-Left) */
+.orb-violet-bottom {
+  bottom: 0;
+  left: 0;
+  transform: translate(-30%, 30%);
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.16'/%3E%3C/svg%3E"),
+    radial-gradient(circle, rgba(176, 38, 255, 0.42) 0%, rgba(168, 85, 247, 0.25) 35%, rgba(217, 70, 239, 0.1) 60%, transparent 75%);
+  filter: blur(90px);
+  animation: orb-breathe-2 15s infinite ease-in-out alternate;
+}
+
+/* 3. Center Ambient Emerald/Cyan Flare */
+.orb-center-ambient {
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -30%);
+  width: 55vw;
+  height: 55vw;
+  min-width: 450px;
+  min-height: 450px;
+  background-image: 
+    radial-gradient(circle, rgba(20, 184, 166, 0.22) 0%, rgba(6, 182, 212, 0.12) 40%, transparent 70%);
+  filter: blur(100px);
+  opacity: 0.65;
+}
+
+@keyframes orb-breathe-1 {
+  0% {
+    transform: translate(30%, -30%) scale(1);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(25%, -25%) scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes orb-breathe-2 {
+  0% {
+    transform: translate(-30%, 30%) scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-25%, 25%) scale(1.15);
+    opacity: 0.95;
+  }
 }
 
 /* Drag & Drop Animated Border */
-@keyframes dash-move {
-  to {
-    stroke-dashoffset: -40;
+@keyframes border-dance {
+  0% {
+    background-position: 0 0, 0 0, 100% 100%, 0 100%;
+  }
+  100% {
+    background-position: 0 -48px, 48px 0, 100% 48px, -48px 100%;
   }
 }
 
@@ -56,13 +136,4 @@
   background-position: 0 0, 0 0, 100% 0, 0 100%;
   background-repeat: no-repeat;
   animation: border-dance 3s infinite linear;
-}
-
-@keyframes border-dance {
-  0% {
-    background-position: 0 0, 0 0, 100% 100%, 0 100%;
-  }
-  100% {
-    background-position: 0 -48px, 48px 0, 100% 48px, -48px 100%;
-  }
 }

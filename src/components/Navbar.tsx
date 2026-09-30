@@ -30,9 +30,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-            <span className="font-mono font-black text-black text-base">F</span>
-          </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-white text-base">FONTOPSY</span>

@@ -116,7 +116,6 @@ const PRESET_PANGRAMS = [
 ];
 
 const WATERFALL_SIZES = [72, 60, 48, 36, 24, 18, 14, 11, 8];
-const PRESET_SIZES = [14, 18, 24, 32, 36, 48, 64, 72, 96, 120, 144];
 
 const DEFAULT_LAYER_COLORS = [
   '#06b6d4', // Cyan
@@ -784,7 +783,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
               </span>
             </button>
 
-            {/* Font Size Selector / Slider */}
+            {/* Font Size Slider */}
             <div className="flex items-center gap-2">
               <span className="text-zinc-400">Size:</span>
               <input
@@ -795,17 +794,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
                 onChange={e => setFontSize(Number(e.target.value))}
                 className="w-24 accent-cyan-400"
               />
-              <select
-                value={fontSize}
-                onChange={e => setFontSize(Number(e.target.value))}
-                className="bg-zinc-900 text-cyan-300 border border-zinc-800 rounded px-1.5 py-0.5 text-xs font-bold outline-none cursor-pointer"
-              >
-                {PRESET_SIZES.map(s => (
-                  <option key={s} value={s}>
-                    {s}px
-                  </option>
-                ))}
-              </select>
+              <span className="text-zinc-200 min-w-[36px] font-mono text-xs">{fontSize}px</span>
             </div>
 
             {/* Letter Spacing (Tracking) */}

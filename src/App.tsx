@@ -163,6 +163,24 @@ export const App: React.FC = () => {
     setFeatureToggles(prev => ({ ...prev, [tag]: enabled }));
   };
 
+  const handleResetFeatures = () => {
+    if (!parsedFont) return;
+    const initialToggles: Record<string, boolean> = {};
+    parsedFont.features.forEach(f => {
+      initialToggles[f.tag] = f.tag === 'kern' || f.tag === 'liga';
+    });
+    setFeatureToggles(initialToggles);
+  };
+
+  const handleToggleAllFeatures = (enabled: boolean) => {
+    if (!parsedFont) return;
+    const toggles: Record<string, boolean> = {};
+    parsedFont.features.forEach(f => {
+      toggles[f.tag] = enabled;
+    });
+    setFeatureToggles(toggles);
+  };
+
   // Compute CSS font-variation-settings string for Variable Fonts
   const cssVariationString = useMemo(() => {
     if (!parsedFont?.metadata.isVariable || parsedFont.variableAxes.length === 0) {
@@ -395,8 +413,12 @@ export const App: React.FC = () => {
                 features={parsedFont.features}
                 ligatures={parsedFont.ligatures}
                 fontFamily={parsedFont.fontFamilyCssName}
+                featureToggles={featureToggles}
                 onToggleFeature={handleToggleFeature}
+                onResetFeatures={handleResetFeatures}
+                onToggleAllFeatures={handleToggleAllFeatures}
                 cssFeatureString={cssFeatureString}
+                variationSettingsCss={cssVariationString}
               />
             )}
 

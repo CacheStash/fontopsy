@@ -884,8 +884,8 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
           <div
             className={`relative min-h-[300px] rounded-2xl border transition-all overflow-hidden ${
               isInverted
-                ? 'bg-zinc-100 text-zinc-950 border-zinc-300'
-                : 'bg-zinc-950 text-zinc-100 border-zinc-800 shadow-[inset_0_2px_15px_rgba(0,0,0,0.5)]'
+                ? 'bg-zinc-100 text-zinc-950 border-zinc-300 shadow-none'
+                : 'bg-zinc-950 text-zinc-100 border-zinc-800 shadow-none dark:shadow-[inset_0_2px_15px_rgba(0,0,0,0.5)]'
             }`}
           >
             <div

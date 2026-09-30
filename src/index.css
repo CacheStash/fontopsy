@@ -299,6 +299,7 @@ html.light input::placeholder {
 /* Transparent Textarea in TypeTester preserves underlying span render */
 html.light textarea.caret-transparent {
   color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Regular Textareas (e.g. in modals or JSON output) */
@@ -306,6 +307,13 @@ html.light textarea:not(.caret-transparent) {
   background-color: #ffffff !important;
   color: #09090b !important;
   border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+/* Remove all shadows from specimen canvas & textarea in light mode */
+html.light [class*="shadow-[inset"],
+html.light .shadow-\[inset_0_2px_15px_rgba\(0\,0\,0\,0\.5\)\] {
+  box-shadow: none !important;
 }
 
 /* Modals & Backdrop */

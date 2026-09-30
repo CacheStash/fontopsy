@@ -5,14 +5,9 @@ export interface BrandConfig {
   displayDomain: string;
 }
 
-export const getBrandConfig = (): BrandConfig => {
+export const getBrandConfig = (): BrandConfig | null => {
   if (typeof window === 'undefined') {
-    return {
-      name: 'Subqi Studio',
-      url: 'https://subqi.com',
-      favicon: '/favicon-subqi.png',
-      displayDomain: 'subqi.com',
-    };
+    return null;
   }
 
   const hostname = window.location.hostname.toLowerCase();
@@ -29,16 +24,21 @@ export const getBrandConfig = (): BrandConfig => {
     };
   }
 
-  // Default to Subqi Studio (fontopsy.subqi.com or localhost)
-  return {
-    name: 'Subqi Studio',
-    url: 'https://subqi.com',
-    favicon: '/favicon-subqi.png',
-    displayDomain: 'subqi.com',
-  };
+  // Check if hosted on fontopsy.subqi.com or previewed with ?brand=subqi
+  if (hostname.includes('subqi') || brandParam === 'subqi') {
+    return {
+      name: 'Subqi Studio',
+      url: 'https://subqi.com',
+      favicon: '/favicon-subqi.png',
+      displayDomain: 'subqi.com',
+    };
+  }
+
+  // Offline / localhost / desktop: return null to preserve v1.1 badge and default styling
+  return null;
 };
 
-export const applyBrandFavicon = (brand: BrandConfig) => {
+export const applyBrandFavicon = (brand: BrandConfig | null) => {
   if (typeof document === 'undefined') return;
   try {
     let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
@@ -47,9 +47,15 @@ export const applyBrandFavicon = (brand: BrandConfig) => {
       link.rel = 'icon';
       document.head.appendChild(link);
     }
-    link.type = 'image/png';
-    link.href = brand.favicon;
-    document.title = `FONTOPSY • Font Inspector & Layers Tester by ${brand.name}`;
+    if (brand) {
+      link.type = 'image/png';
+      link.href = brand.favicon;
+      document.title = `FONTOPSY • Font Inspector & Layers Tester by ${brand.name}`;
+    } else {
+      link.type = 'image/svg+xml';
+      link.href = '/favicon.svg';
+      document.title = 'FONTOPSY v1.1 • Font Inspector & Layers Tester';
+    }
   } catch (err) {
     console.warn('Failed to apply brand favicon', err);
   }

@@ -14,7 +14,7 @@ interface NavbarProps {
   onOpenFilePicker: () => void;
   onOpenExporter: () => void;
   onLoadSample: () => void;
-  brand?: BrandConfig;
+  brand?: BrandConfig | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({

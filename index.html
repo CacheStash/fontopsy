@@ -2,22 +2,26 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link id="app-favicon" rel="icon" type="image/png" href="/favicon-subqi.png" />
+    <link id="app-favicon" rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fontopsy | Font Inspector & Layers Tester</title>
+    <title>Fontopsy v1.1 | Font Inspector & Layers Tester</title>
     <script>
       (function() {
         try {
           var h = window.location.hostname.toLowerCase();
           var p = new URLSearchParams(window.location.search).get('brand');
           var isBombas = h.indexOf('bombastype') !== -1 || p === 'bombastype';
-          var fav = isBombas ? '/favicon-bombastype.png' : '/favicon-subqi.png';
-          var brandName = isBombas ? 'Bombastype' : 'Subqi Studio';
-          document.title = 'Fontopsy • Font Inspector & Layers Tester by ' + brandName;
+          var isSubqi = h.indexOf('subqi') !== -1 || p === 'subqi';
           var link = document.getElementById('app-favicon') || document.querySelector("link[rel*='icon']");
-          if (link) {
-            link.type = 'image/png';
-            link.href = fav;
+          if (isBombas) {
+            document.title = 'Fontopsy • Font Inspector & Layers Tester by Bombastype';
+            if (link) { link.type = 'image/png'; link.href = '/favicon-bombastype.png'; }
+          } else if (isSubqi) {
+            document.title = 'Fontopsy • Font Inspector & Layers Tester by Subqi Studio';
+            if (link) { link.type = 'image/png'; link.href = '/favicon-subqi.png'; }
+          } else {
+            document.title = 'Fontopsy v1.1 | Font Inspector & Layers Tester';
+            if (link) { link.type = 'image/svg+xml'; link.href = '/favicon.svg'; }
           }
         } catch(e) {}
       })();

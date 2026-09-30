@@ -452,30 +452,37 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/80 py-4 px-6 text-center text-xs font-mono text-zinc-500 flex flex-col sm:flex-row items-center justify-between gap-2 max-w-7xl mx-auto w-full">
-        <div className="flex items-center gap-1.5">
-          <span>FONTOPSY • Font Inspector & Layers Tester</span>
-          <span>by</span>
-          <a
-            href={brand.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-400 hover:underline transition-colors"
-          >
-            {brand.name}
-          </a>
-        </div>
-        <div className="flex items-center gap-2">
-          <a
-            href={brand.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-zinc-400 hover:text-zinc-200 transition-colors"
-          >
-            {brand.displayDomain}
-          </a>
-          <span>•</span>
-          <span>CACHE-STASH VECTOR TYPOGRAPHY PIPELINE</span>
-        </div>
+        {brand ? (
+          <>
+            <div className="flex items-center gap-1.5">
+              <span>FONTOPSY • Font Inspector & Layers Tester</span>
+              <span>by</span>
+              <a
+                href={brand.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:underline transition-colors"
+              >
+                {brand.name}
+              </a>
+            </div>
+            <div>
+              <a
+                href={brand.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                {brand.displayDomain}
+              </a>
+            </div>
+          </>
+        ) : (
+          <>
+            <span>FONTOPSY v1.1 • Font Inspector & Layers Tester</span>
+            <span className="text-[11px] text-zinc-500">OFFLINE RUNTIME</span>
+          </>
+        )}
       </footer>
 
       {/* SVG Exporter Modal (Offline/Localhost Tooling Only) */}

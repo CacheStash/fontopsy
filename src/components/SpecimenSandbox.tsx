@@ -10,8 +10,6 @@ import type opentype from 'opentype.js';
 import type { ParsedFontResult } from '../types/font';
 import { LanguageMatrixView } from './LanguageMatrixView';
 import {
-  Sun,
-  Moon,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -151,7 +149,6 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
   const [letterSpacing, setLetterSpacing] = useState(0);
   const [lineHeight, setLineHeight] = useState(1.2);
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right' | 'justify'>('left');
-  const [isInverted, setIsInverted] = useState(false);
 
   // Layer Mode State
   const [isLayeredMode, setIsLayeredMode] = useState<boolean>(() => loadedFonts.length > 1);
@@ -840,13 +837,14 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
               <span className="text-zinc-200 min-w-[28px]">{lineHeight.toFixed(2)}</span>
             </div>
 
-            {/* Text Alignment */}
-            <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
+            {/* Text Alignment (Aligned to the right) */}
+            <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800 ml-auto">
               {(['left', 'center', 'right', 'justify'] as const).map(a => (
                 <button
                   key={a}
                   onClick={() => setTextAlign(a)}
                   className={`p-1 rounded ${textAlign === a ? 'bg-cyan-950 text-cyan-300' : 'text-zinc-400 hover:text-white'}`}
+                  title={`Align ${a}`}
                 >
                   {a === 'left' && <AlignLeft size={14} />}
                   {a === 'center' && <AlignCenter size={14} />}
@@ -855,15 +853,6 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
                 </button>
               ))}
             </div>
-
-            {/* Color Inversion Toggle */}
-            <button
-              onClick={() => setIsInverted(!isInverted)}
-              className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
-              title="Invert background / text color"
-            >
-              {isInverted ? <Moon size={15} /> : <Sun size={15} />}
-            </button>
           </div>
 
           {/* Preset Buttons */}
@@ -882,11 +871,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
 
           {/* MAIN INTERACTIVE DISPLAY CANVAS (WITH OVERLAY TEXTAREA & ALTERNATE POPOVER) */}
           <div
-            className={`relative min-h-[300px] rounded-2xl border transition-all overflow-hidden ${
-              isInverted
-                ? 'bg-zinc-100 text-zinc-950 border-zinc-300 shadow-none'
-                : 'bg-zinc-950 text-zinc-100 border-zinc-800 shadow-none dark:shadow-[inset_0_2px_15px_rgba(0,0,0,0.5)]'
-            }`}
+            className="relative min-h-[300px] rounded-2xl border transition-all overflow-hidden bg-zinc-950 text-zinc-100 border-zinc-800 shadow-none"
           >
             <div
               ref={scrollContainerRef}

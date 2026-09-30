@@ -1,43 +1,27 @@
-# Fontopsy: Advanced Client-Side Font Inspector & Glyph Extractor
+# Fontopsy: Font Inspector & Layers Tester
 
-An ultra-fast, client-side, zero-server font forensic and inspection web application inspired by FontDrop.info. Parses `.otf`, `.ttf`, `.woff`, and `.woff2` files directly in-memory, explores OpenType layout features, previews waterfall specimens, inspects deep SFNT binary tables, and features the specialized **Layered Font Glyph Exporter** for chromatic typography in vector design suites (Adobe Illustrator, InDesign, Figma).
+An ultra-fast, client-side, zero-server font forensic and inspection web application inspired by FontDrop.info. Parses `.otf`, `.ttf`, `.woff`, and `.woff2` files directly in-memory, explores OpenType layout features, previews waterfall specimens, inspects deep SFNT binary tables, supports multi-font chromatic Layer Stacking with character alternate popovers (from `bombastype` / `subqifont`), detects 120+ languages with full alphabet matrix telemetry, and features the specialized **Layered Font Glyph Exporter** for chromatic typography in vector design suites (Adobe Illustrator, InDesign, Figma).
 
 ---
 
 ## Key Features
 
-### 1. In-Memory Drag & Drop Forensic Engine
+### 1. In-Memory Drag & Drop Multi-Font Engine
 * **Formats Supported:** OTF, TTF, WOFF, WOFF2 (with WebAssembly Brotli/WOFF2 decompression via `wawoff2`).
+* **Multi-Font Family Loading:** Drop single font or multiple font family styles simultaneously for chromatic layering.
 * **Zero Remote Server Uploads:** 100% computed in-browser using `opentype.js`.
-* **Dynamic Font Injection:** Injects `@font-face` rules in the DOM so custom text renders directly with the dropped font.
+* **Dynamic Font Injection:** Injects independent `@font-face` rules in the DOM so custom text renders directly with all dropped styles simultaneously.
 
-### 2. Dedicated Custom Module: "Layered Font Glyph Exporter"
-* **Problem Solved:** When designing multi-layered chromatic fonts in vector software (Illustrator, InDesign, Figma), designers duplicate text blocks across layers with the exact same glyph sequence. Accidental unmapped glyphs, invisible spaces (`U+0020`), or `.notdef` ruins text alignment and cursor placement.
-* **Strict Filter & Exclusion Rules:**
-  * Omit `.notdef` (GID 0) and any unencoded blank boxes.
-  * Omit Whitespaces: standard space (`U+0020`), no-break space (`U+00A0`), en/em spaces (`U+2000` - `U+200B`), hair/thin spaces, zero-width spaces (`U+FEFF`).
-  * Omit Non-Printing & Control Characters: `U+0000` to `U+001F`, `U+007F` to `U+009F`, soft hyphen (`U+00AD`).
-  * Omit Pathless Glyphs: Discards glyphs without contours unless mapped to visible characters.
-* **Deterministic Structured Output:**
-  * **Line 1 (Uppercase Latin):** `A B C D E F G H I J K L M N O P Q R S T U V W X Y Z`
-  * **Line 2 (Lowercase Latin):** `a b c d e f g h i j k l m n o p q r s t u v w x y z`
-  * **Line 3 (Numerals):** `0 1 2 3 4 5 6 7 8 9`
-  * **Line 4 (Standard Keyboard Symbols):** `! " # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \ ] ^ _ ` { | } ~`
-  * **Line 5+ (Remaining Glyphs):** Accented characters, math, currency, and unencoded alternates.
-* **Toolbar Actions:**
-  * `[ Copy All Glyphs (Layer-Ready) ]`
-  * Delimiter toggle: `None` | `Space` | `Newline`
-  * `[ Export Character Map as JSON ]` & `[ Download .TXT ]`
+### 2. Chromatic TypeTester & Multi-Layer Engine (Inspired by bombastype / subqifont)
+* **Layer Stacking Order:** Drag-and-drop layer reordering (`GripVertical`), independent color pickers per layer, style selectors from loaded font files, and visibility toggles.
+* **Custom Alternate Selection:** Interactive text span selection triggers instant GSUB lookups (`aalt`, `salt`, `swsh`, `titl`, `calt`, `dlig`, `ss01`-`ss20`).
+* **Secure RasterMetricTile Popover:** Renders Bézier curves to canvas without exposing vector master curves in the DOM.
+* **OpenType Feature Toggles:** Live interactive toggles for all detected font features.
 
-### 3. OpenType & Layout Feature Telemetry
-* **Detection:** Enumerates GSUB & GPOS tags (`kern`, `liga`, `dlig`, `salt`, `ss01`-`ss20`, `swsh`, `cpsp`, `smcp`, `frac`, `ordn`, `case`, etc.).
-* **Interactive Live Toggles:** Toggle individual features to live-update CSS `font-feature-settings`.
-* **Ligatures Dictionary:** Visual dictionary mapping base characters to substitutions (e.g. `f + i -> fi`).
-
-### 4. Specimen Testing Sandbox
-* **Type Yourself:** Live editable canvas with sliders for `font-size`, `letter-spacing`, `line-height`, alignments, and dark/light color inversion.
-* **Waterfall Specimen:** Cascading specimen sizes from 72px down to 8px.
-* **Language Support Matrix:** Script coverage testing (Basic Latin, Latin Extended, Cyrillic, Greek, Vietnamese, etc.).
+### 3. Comprehensive Language & Script Matrix (120+ Languages)
+* **FontDrop.info-grade Detection:** Scans font character sets against 120+ language orthographies (Indonesian, English, Spanish, German, French, Turkish, Polish, Vietnamese, Zulu, Swahili, Russian, Greek, etc.).
+* **Visual Character Matrix Cards:** Renders the language's actual alphabet, special diacritics, and sample pangrams directly with the loaded font.
+* **Script Blocks Inspector:** Deep analysis of Basic Latin, Latin-1, Latin Extended-A/B, Cyrillic, and Greek blocks with exact glyph coverage counts and missing glyph alerts.
 
 ### 5. Glyph Grid Matrix & Bézier Inspector
 * Paginated grid rendering each glyph on an SVG canvas.

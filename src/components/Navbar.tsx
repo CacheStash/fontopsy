@@ -4,6 +4,9 @@ import { Layers, Upload, Sparkles } from 'lucide-react';
 
 interface NavbarProps {
   parsedFont: ParsedFontResult | null;
+  loadedFonts?: ParsedFontResult[];
+  activeFontIndex?: number;
+  onSelectFontIndex?: (index: number) => void;
   onOpenFilePicker: () => void;
   onOpenExporter: () => void;
   onLoadSample: () => void;
@@ -11,6 +14,9 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   parsedFont,
+  loadedFonts = [],
+  activeFontIndex = 0,
+  onSelectFontIndex,
   onOpenFilePicker,
   onOpenExporter,
   onLoadSample,
@@ -27,11 +33,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-white text-base">FONTOPSY</span>
               <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded bg-zinc-800 text-cyan-400 border border-zinc-700">
-                v1.0
+                v1.1
               </span>
             </div>
             <div className="text-[11px] text-zinc-400 font-mono hidden sm:block">
-              Forensic Font Inspector & Layer Extractor
+              Font Inspector & Layers Tester
             </div>
           </div>
         </div>
@@ -41,9 +47,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden lg:flex items-center gap-4 px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-zinc-800 text-xs font-mono">
             <div className="flex items-center gap-1.5">
               <span className="text-zinc-500">FONT:</span>
-              <span className="text-cyan-300 font-medium max-w-[140px] truncate" title={parsedFont.metadata.fullName}>
-                {parsedFont.metadata.fullName}
-              </span>
+              {loadedFonts.length > 1 && onSelectFontIndex ? (
+                <select
+                  value={activeFontIndex}
+                  onChange={(e) => onSelectFontIndex(Number(e.target.value))}
+                  className="bg-zinc-800 text-cyan-300 border border-zinc-700 rounded px-1.5 py-0.5 text-xs font-medium cursor-pointer outline-none focus:border-cyan-500 max-w-[180px] truncate"
+                >
+                  {loadedFonts.map((f, idx) => (
+                    <option key={idx} value={idx}>
+                      {f.metadata.styleName || f.metadata.fullName || `Style ${idx + 1}`}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-cyan-300 font-medium max-w-[140px] truncate" title={parsedFont.metadata.fullName}>
+                  {parsedFont.metadata.fullName}
+                </span>
+              )}
             </div>
             <span className="text-zinc-700">|</span>
             <div className="flex items-center gap-1">

@@ -1,18 +1,56 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { UploadCloud, Cpu, ArrowUpRight } from 'lucide-react';
+import { UploadCloud, Cpu, ArrowUpRight, Files } from 'lucide-react';
+
+export interface LoadedFileItem {
+  buffer: ArrayBuffer;
+  fileName: string;
+}
 
 interface DropZoneProps {
-  onFileLoaded: (buffer: ArrayBuffer, fileName: string) => void;
+  onFilesLoaded: (files: LoadedFileItem[]) => void;
   isLoading: boolean;
 }
 
 export const DropZone: React.FC<DropZoneProps> = ({
-  onFileLoaded,
+  onFilesLoaded,
   isLoading,
 }) => {
   const [isWindowDragOver, setIsWindowDragOver] = useState(false);
   const [isBannerHover, setIsBannerHover] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Read multiple files as ArrayBuffers
+  const processFiles = async (fileList: FileList | File[]) => {
+    const files = Array.from(fileList).filter(f =>
+      /\.(otf|ttf|woff|woff2)$/i.test(f.name)
+    );
+    if (files.length === 0) return;
+
+    const readPromises = files.map(file => {
+      return new Promise<LoadedFileItem>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const buffer = e.target?.result as ArrayBuffer;
+          if (buffer) {
+            resolve({ buffer, fileName: file.name });
+          } else {
+            reject(new Error(`Failed to read file ${file.name}`));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(file);
+      });
+    });
+
+    try {
+      const results = await Promise.all(readPromises);
+      if (results.length > 0) {
+        onFilesLoaded(results);
+      }
+    } catch (err) {
+      console.error('Error processing dropped files:', err);
+    }
+  };
 
   // Global drag-and-drop listener across entire window
   useEffect(() => {
@@ -38,7 +76,7 @@ export const DropZone: React.FC<DropZoneProps> = ({
       setIsWindowDragOver(false);
       setIsBannerHover(false);
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        processFile(e.dataTransfer.files[0]);
+        processFiles(e.dataTransfer.files);
       }
     };
 
@@ -53,31 +91,23 @@ export const DropZone: React.FC<DropZoneProps> = ({
     };
   }, []);
 
-  const processFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const buffer = e.target?.result as ArrayBuffer;
-      if (buffer) {
-        onFileLoaded(buffer, file.name);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processFile(e.target.files[0]);
+      processFiles(e.target.files);
     }
+    // Reset value so re-uploading the same file still triggers onChange
+    e.target.value = '';
   };
 
   return (
     <>
-      {/* Hidden File Input */}
+      {/* Hidden File Input with Multiple Selection */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleInputChange}
         accept=".otf,.ttf,.woff,.woff2"
+        multiple
         className="hidden"
       />
 
@@ -86,10 +116,10 @@ export const DropZone: React.FC<DropZoneProps> = ({
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 border-4 border-dashed border-cyan-400 animate-pulse pointer-events-none">
           <UploadCloud size={64} className="text-cyan-400 mb-4 animate-bounce" />
           <h2 className="text-2xl font-bold font-mono text-cyan-300 tracking-wider">
-            RELEASE FONT TO DISSECT
+            RELEASE FONT(S) TO INSPECT & LAYER
           </h2>
           <p className="text-zinc-400 font-mono text-sm mt-2">
-            In-memory forensic parsing for `.otf`, `.ttf`, `.woff`, `.woff2`
+            Drop single font or multiple font family styles (.otf, .ttf, .woff, .woff2)
           </p>
         </div>
       )}
@@ -106,7 +136,7 @@ export const DropZone: React.FC<DropZoneProps> = ({
           e.preventDefault();
           setIsBannerHover(false);
           if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            processFile(e.dataTransfer.files[0]);
+            processFiles(e.dataTransfer.files);
           }
         }}
         className={`w-full p-4 sm:p-5 rounded-2xl cursor-pointer transition-all duration-200 group lab-card flex flex-col sm:flex-row items-center justify-between gap-4 border-2 border-dashed ${
@@ -128,14 +158,14 @@ export const DropZone: React.FC<DropZoneProps> = ({
           <div>
             <div className="flex items-center justify-center sm:justify-start gap-2">
               <span className="font-mono font-bold text-sm sm:text-base text-white tracking-wide group-hover:text-cyan-300 transition-colors">
-                DRAG & DROP FONT FILE HERE
+                DRAG & DROP FONT FILE(S) HERE
               </span>
               <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-semibold">
-                CLICK TO BROWSE
+                MULTIPLE FILES SUPPORTED
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              Instant in-memory parsing for <span className="text-zinc-200">.OTF</span>, <span className="text-zinc-200">.TTF</span>, <span className="text-zinc-200">.WOFF</span>, <span className="text-zinc-200">.WOFF2</span> with zero server uploads
+              Drop single file or multi-style font family for chromatic layer testing. Zero server uploads.
             </p>
           </div>
         </div>
@@ -153,8 +183,9 @@ export const DropZone: React.FC<DropZoneProps> = ({
             ))}
           </div>
 
-          <div className="px-3.5 py-1.5 rounded-xl bg-cyan-500/10 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-black border border-cyan-500/40 font-mono text-xs font-bold transition-all flex items-center gap-1">
-            <span>CHOOSE FILE</span>
+          <div className="px-3.5 py-1.5 rounded-xl bg-cyan-500/10 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-black border border-cyan-500/40 font-mono text-xs font-bold transition-all flex items-center gap-1.5">
+            <Files size={14} />
+            <span>CHOOSE FILE(S)</span>
             <ArrowUpRight size={14} />
           </div>
         </div>

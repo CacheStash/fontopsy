@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { ParsedFontResult, GlyphDetail } from './types/font';
 import { parseFontFile } from './utils/fontParser';
 import { Navbar } from './components/Navbar';
-import { DropZone } from './components/DropZone';
+import { DropZone, type LoadedFileItem } from './components/DropZone';
 import { MetadataOverview } from './components/MetadataOverview';
 import { GlyphGrid } from './components/GlyphGrid';
 import { GlyphModal } from './components/GlyphModal';
@@ -23,7 +23,11 @@ import {
 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [parsedFont, setParsedFont] = useState<ParsedFontResult | null>(null);
+  const [loadedFonts, setLoadedFonts] = useState<ParsedFontResult[]>([]);
+  const [activeFontIndex, setActiveFontIndex] = useState<number>(0);
+
+  const parsedFont = loadedFonts[activeFontIndex] || null;
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'glyphs' | 'specimen' | 'features' | 'metadata' | 'tables'>('specimen');
@@ -40,29 +44,37 @@ export const App: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load a font buffer
-  const handleLoadBuffer = async (buffer: ArrayBuffer, fileName: string) => {
+  // Load one or multiple font buffers (supporting full family styles & chromatic layers)
+  const handleLoadFiles = async (files: LoadedFileItem[]) => {
+    if (!files || files.length === 0) return;
     setIsLoading(true);
     setError(null);
     try {
-      const result = await parseFontFile(buffer, fileName);
-      setParsedFont(result);
+      const parsedResults = await Promise.all(
+        files.map(f => parseFontFile(f.buffer, f.fileName))
+      );
 
-      // Initialize feature toggles
-      const initialToggles: Record<string, boolean> = {};
-      result.features.forEach(f => {
-        initialToggles[f.tag] = f.enabled;
-      });
-      setFeatureToggles(initialToggles);
+      setLoadedFonts(parsedResults);
+      setActiveFontIndex(0);
 
-      // Auto-detect and initialize Variable Font Axes
-      const initialAxes: Record<string, number> = {};
-      result.variableAxes.forEach(ax => {
-        initialAxes[ax.tag] = ax.default;
-      });
-      setVariationValues(initialAxes);
+      const primary = parsedResults[0];
+      if (primary) {
+        // Initialize feature toggles
+        const initialToggles: Record<string, boolean> = {};
+        primary.features.forEach(f => {
+          initialToggles[f.tag] = f.enabled;
+        });
+        setFeatureToggles(initialToggles);
+
+        // Auto-detect and initialize Variable Font Axes
+        const initialAxes: Record<string, number> = {};
+        primary.variableAxes.forEach(ax => {
+          initialAxes[ax.tag] = ax.default;
+        });
+        setVariationValues(initialAxes);
+      }
     } catch (err: unknown) {
-      console.error('Failed to parse font file:', err);
+      console.error('Failed to parse font file(s):', err);
       setError(
         err instanceof Error
           ? err.message
@@ -73,6 +85,22 @@ export const App: React.FC = () => {
     }
   };
 
+  // Sync telemetry when active style switches
+  useEffect(() => {
+    if (!parsedFont) return;
+    const initialToggles: Record<string, boolean> = {};
+    parsedFont.features.forEach(f => {
+      initialToggles[f.tag] = f.enabled;
+    });
+    setFeatureToggles(initialToggles);
+
+    const initialAxes: Record<string, number> = {};
+    parsedFont.variableAxes.forEach(ax => {
+      initialAxes[ax.tag] = ax.default;
+    });
+    setVariationValues(initialAxes);
+  }, [activeFontIndex]);
+
   // Load bundled sample font
   const loadSampleFont = async () => {
     setIsLoading(true);
@@ -80,7 +108,7 @@ export const App: React.FC = () => {
       const response = await fetch('/sample-font.ttf');
       if (!response.ok) throw new Error('Failed to fetch sample font');
       const buffer = await response.arrayBuffer();
-      await handleLoadBuffer(buffer, 'Inter-Regular.ttf');
+      await handleLoadFiles([{ buffer, fileName: 'Inter-Regular.ttf' }]);
     } catch (err) {
       console.warn('Sample font fetch error:', err);
     } finally {
@@ -136,26 +164,39 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-zinc-950 text-zinc-100 overflow-x-hidden">
-      {/* Background Gradient Blurred Orbs (Inspired by subqifont, high-contrast neon on dark) */}
+      {/* Background Gradient Blurred Orbs */}
       <div className="grain-orb-base orb-cyan-top pointer-events-none" />
       <div className="grain-orb-base orb-violet-bottom pointer-events-none" />
       <div className="grain-orb-base orb-center-ambient pointer-events-none hidden md:block" />
 
-      {/* Hidden File Picker Input */}
+      {/* Hidden File Picker Input supporting Multiple Files */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={e => {
           if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = ev => {
-              const buf = ev.target?.result as ArrayBuffer;
-              if (buf) handleLoadBuffer(buf, file.name);
-            };
-            reader.readAsArrayBuffer(file);
+            const files = Array.from(e.target.files);
+            const readers = files.map(file => {
+              return new Promise<LoadedFileItem>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                  const buf = ev.target?.result as ArrayBuffer;
+                  if (buf) resolve({ buffer: buf, fileName: file.name });
+                  else reject(new Error('Failed to read file'));
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file);
+              });
+            });
+            Promise.all(readers)
+              .then(handleLoadFiles)
+              .catch(err => {
+                console.error('File reading error:', err);
+              });
           }
+          e.target.value = '';
         }}
+        multiple
         accept=".otf,.ttf,.woff,.woff2"
         className="hidden"
       />
@@ -163,16 +204,19 @@ export const App: React.FC = () => {
       {/* Top Navbar */}
       <Navbar
         parsedFont={parsedFont}
+        loadedFonts={loadedFonts}
+        activeFontIndex={activeFontIndex}
+        onSelectFontIndex={setActiveFontIndex}
         onOpenFilePicker={() => fileInputRef.current?.click()}
         onOpenExporter={() => setShowLayerExporter(true)}
         onLoadSample={loadSampleFont}
       />
 
-      {/* Main Content Area (relative z-10 over blurred orbs) */}
+      {/* Main Content Area */}
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
         {/* Full-width Drag & Drop Button Banner across main content */}
         <DropZone
-          onFileLoaded={handleLoadBuffer}
+          onFilesLoaded={handleLoadFiles}
           isLoading={isLoading}
         />
 
@@ -196,7 +240,7 @@ export const App: React.FC = () => {
         {isLoading && !parsedFont && (
           <div className="flex flex-col items-center justify-center p-20 text-zinc-400 font-mono text-sm">
             <Cpu size={36} className="animate-spin text-cyan-400 mb-3" />
-            <span>Forensic Binary Parsing in progress...</span>
+            <span>Parsing font binary in progress...</span>
           </div>
         )}
 
@@ -214,7 +258,7 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <Type size={15} />
-                  <span>Specimen Testing</span>
+                  <span>Specimen & Layers</span>
                 </button>
 
                 <button
@@ -277,7 +321,7 @@ export const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Auto-detected Variable Font Axes Controller (appears whenever variable font is detected) */}
+            {/* Auto-detected Variable Font Axes Controller */}
             {parsedFont.metadata.isVariable && parsedFont.variableAxes.length > 0 && (
               <VariableAxesController
                 axes={parsedFont.variableAxes}
@@ -293,7 +337,11 @@ export const App: React.FC = () => {
             {/* Tab Views */}
             {activeTab === 'specimen' && (
               <SpecimenSandbox
+                font={parsedFont.font}
                 fontFamily={parsedFont.fontFamilyCssName}
+                loadedFonts={loadedFonts}
+                activeFontIndex={activeFontIndex}
+                onSelectFontIndex={setActiveFontIndex}
                 featureSettingsCss={cssFeatureString}
                 variationSettingsCss={cssVariationString}
               />
@@ -335,7 +383,7 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/80 py-4 px-6 text-center text-xs font-mono text-zinc-500 flex flex-col sm:flex-row items-center justify-between gap-2 max-w-7xl mx-auto w-full">
-        <span>FONTOPSY • In-Memory Client-Side Font Forensic Tool</span>
+        <span>FONTOPSY • Font Inspector & Layers Tester</span>
         <span>CACHE-STASH VECTOR TYPOGRAPHY PIPELINE</span>
       </footer>
 

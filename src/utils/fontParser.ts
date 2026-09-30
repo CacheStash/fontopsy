@@ -68,7 +68,7 @@ export function detectFontFormat(buffer: ArrayBuffer): FontFormat {
 export function registerFontFace(fontName: string, buffer: ArrayBuffer): string {
   const blob = new Blob([buffer], { type: 'font/opentype' });
   const url = URL.createObjectURL(blob);
-  const fontFaceStyleId = 'fontopsy-dynamic-fontface';
+  const fontFaceStyleId = `fontopsy-face-${fontName.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
   let styleEl = document.getElementById(fontFaceStyleId) as HTMLStyleElement | null;
   if (!styleEl) {

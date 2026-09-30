@@ -9,6 +9,7 @@ interface NavbarProps {
   onSelectFontIndex?: (index: number) => void;
   isLightMode: boolean;
   onToggleTheme: () => void;
+  isLocalMode?: boolean;
   onOpenFilePicker: () => void;
   onOpenExporter: () => void;
   onLoadSample: () => void;
@@ -21,6 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectFontIndex,
   isLightMode,
   onToggleTheme,
+  isLocalMode = false,
   onOpenFilePicker,
   onOpenExporter,
   onLoadSample,
@@ -106,12 +108,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
-          {/* Primary Action: SVG Exporter */}
-          {parsedFont && (
+          {/* Primary Action: SVG Exporter (Restricted to Offline / Localhost Only) */}
+          {parsedFont && isLocalMode && (
             <button
               onClick={onOpenExporter}
               className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all flex items-center gap-2 active:scale-95"
-              title="Export All Font Glyphs to Single-Sheet SVG Matrix"
+              title="Export All Font Glyphs to Single-Sheet SVG Matrix (Local Tooling Only)"
             >
               <FileCode size={15} />
               <span>SVG EXPORTER</span>

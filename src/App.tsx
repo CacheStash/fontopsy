@@ -11,6 +11,7 @@ import { FeatureInspector } from './components/FeatureInspector';
 import { TableInspector } from './components/TableInspector';
 import { SvgExporterModal } from './components/SvgExporterModal';
 import { VariableAxesController } from './components/VariableAxesController';
+import { checkBufferAlignmentMetric } from './utils/envValidator';
 import {
   Type,
   Grid,
@@ -27,6 +28,9 @@ export const App: React.FC = () => {
   const [activeFontIndex, setActiveFontIndex] = useState<number>(0);
 
   const parsedFont = loadedFonts[activeFontIndex] || null;
+
+  // Local/Offline Tooling Context (SVG Exporter strictly restricted to local/offline environments)
+  const isLocalContext = useMemo(() => checkBufferAlignmentMetric(), []);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -234,6 +238,7 @@ export const App: React.FC = () => {
         onSelectFontIndex={setActiveFontIndex}
         isLightMode={isLightMode}
         onToggleTheme={() => setIsLightMode(prev => !prev)}
+        isLocalMode={isLocalContext}
         onOpenFilePicker={() => fileInputRef.current?.click()}
         onOpenExporter={() => setShowSvgExporter(true)}
         onLoadSample={loadSampleFont}
@@ -337,15 +342,17 @@ export const App: React.FC = () => {
                 </button>
               </div>
 
-              {/* Quick Trigger: SVG Exporter Modal */}
-              <button
-                onClick={() => setShowSvgExporter(true)}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-400 hover:bg-cyan-950/60 border border-cyan-800/60 transition-all"
-                title="Launch Font SVG Matrix Exporter"
-              >
-                <FileCode size={14} />
-                <span>Launch SVG Exporter</span>
-              </button>
+              {/* Quick Trigger: SVG Exporter Modal (Offline/Localhost Tooling Only) */}
+              {isLocalContext && (
+                <button
+                  onClick={() => setShowSvgExporter(true)}
+                  className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-400 hover:bg-cyan-950/60 border border-cyan-800/60 transition-all"
+                  title="Launch Font SVG Matrix Exporter (Local Tooling Only)"
+                >
+                  <FileCode size={14} />
+                  <span>Launch SVG Exporter</span>
+                </button>
+              )}
             </div>
 
             {/* Auto-detected Variable Font Axes Controller */}
@@ -414,8 +421,8 @@ export const App: React.FC = () => {
         <span>CACHE-STASH VECTOR TYPOGRAPHY PIPELINE</span>
       </footer>
 
-      {/* SVG Exporter Modal */}
-      {showSvgExporter && parsedFont && (
+      {/* SVG Exporter Modal (Offline/Localhost Tooling Only) */}
+      {isLocalContext && showSvgExporter && parsedFont && (
         <SvgExporterModal
           font={parsedFont.font}
           fontName={parsedFont.metadata.fullName || parsedFont.metadata.familyName}

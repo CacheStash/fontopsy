@@ -241,7 +241,7 @@ export const LANGUAGES_DATABASE: LanguageDefinition[] = [
     nativeName: 'Türkçe',
     script: 'Latin',
     region: 'Southern Europe / Middle East',
-    requiredChars: BASE_LATIN_UPPER + BASE_LATIN_LOWER + 'ÇĞİÖŞÜçğıöşü',
+    requiredChars: 'ABCÇDEFGĞHIİJKLMNOPRSŞTUÜVYZabcçdefgğhıijklmnoprsştuüvyz',
     alphabet: 'Aa Bb Cc Çç Dd Ee Ff Gg Ğğ Hh Iı İi Jj Kk Ll Mm Nn Oo Öö Pp Rr Ss Şş Tt Uu Üü Vv Yy Zz',
     sampleText: 'Pijamalı hasta, yağız şoföre çabucak güvendi.',
   },

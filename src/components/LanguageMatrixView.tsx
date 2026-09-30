@@ -4,7 +4,7 @@ import {
   detectLanguageCoverage,
   detectScriptBlockCoverage,
 } from '../utils/languageData';
-import { Globe, Search, CheckCircle2, AlertTriangle, BookOpen } from 'lucide-react';
+import { Globe, Search, CheckCircle2, BookOpen } from 'lucide-react';
 
 interface LanguageMatrixViewProps {
   font: opentype.Font;
@@ -22,10 +22,9 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
   const [subView, setSubView] = useState<'languages' | 'script_blocks'>('languages');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedScript, setSelectedScript] = useState<'All' | 'Latin' | 'Cyrillic' | 'Greek'>('All');
-  const [supportFilter, setSupportFilter] = useState<'all' | 'full_only'>('all');
 
   // Compute language detection against active font
-  const { results: languageResults, fullySupportedCount, partiallySupportedCount } = useMemo(() => {
+  const { results: languageResults, fullySupportedCount } = useMemo(() => {
     return detectLanguageCoverage(font);
   }, [font]);
 
@@ -34,12 +33,11 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
     return detectScriptBlockCoverage(font);
   }, [font]);
 
-  // Filter languages based on search, script, and support filter
+  // Filter ONLY languages that are 100% supported!
   const filteredLanguages = useMemo(() => {
     return languageResults.filter(item => {
-      // Support filter
-      if (supportFilter === 'full_only' && !item.supported) return false;
-      if (item.coverageRatio < 0.7) return false; // Hide languages with less than 70% support
+      // STRICT: Only 100% fully supported languages
+      if (!item.supported) return false;
 
       // Script filter
       if (selectedScript !== 'All' && item.language.script !== selectedScript) return false;
@@ -55,14 +53,15 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
 
       return true;
     });
-  }, [languageResults, supportFilter, selectedScript, searchQuery]);
+  }, [languageResults, selectedScript, searchQuery]);
 
+  // Counts of 100% supported languages per script
   const scriptCounts = useMemo(() => {
-    const supportedLangs = languageResults.filter(r => r.supported || r.isPartial);
+    const fullySupportedLangs = languageResults.filter(r => r.supported);
     return {
-      Latin: supportedLangs.filter(r => r.language.script === 'Latin').length,
-      Cyrillic: supportedLangs.filter(r => r.language.script === 'Cyrillic').length,
-      Greek: supportedLangs.filter(r => r.language.script === 'Greek').length,
+      Latin: fullySupportedLangs.filter(r => r.language.script === 'Latin').length,
+      Cyrillic: fullySupportedLangs.filter(r => r.language.script === 'Cyrillic').length,
+      Greek: fullySupportedLangs.filter(r => r.language.script === 'Greek').length,
     };
   }, [languageResults]);
 
@@ -80,14 +79,12 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
               </span>{' '}
               detected
             </h3>
-            {partiallySupportedCount > 0 && (
-              <span className="text-xs font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800/80">
-                +{partiallySupportedCount} partial
-              </span>
-            )}
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 font-bold">
+              100% Full Support
+            </span>
           </div>
           <p className="text-xs text-zinc-400 font-mono mt-1">
-            Dynamic Unicode orthography detection inspired by FontDrop.info, rendered in structured character matrix cards.
+            Displaying only languages with 100% glyph coverage.
           </p>
         </div>
 
@@ -102,7 +99,7 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
             }`}
           >
             <Globe size={14} />
-            <span>Supported Languages ({languageResults.filter(r => r.supported || r.isPartial).length})</span>
+            <span>Supported Languages ({fullySupportedCount})</span>
           </button>
           <button
             onClick={() => setSubView('script_blocks')}
@@ -118,7 +115,7 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
         </div>
       </div>
 
-      {/* VIEW 1: SUPPORTED LANGUAGES (CARD-BASED WITH A-Z CHARACTERS) */}
+      {/* VIEW 1: SUPPORTED LANGUAGES (CARD-BASED WITH A-Z CHARACTERS - 100% ONLY) */}
       {subView === 'languages' && (
         <div className="space-y-4">
           {/* Filter Bar */}
@@ -133,7 +130,7 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Filter languages (e.g. Indonesian, German, Turkish, Zulu)..."
+                placeholder="Filter 100% supported languages (e.g. Indonesian, German, Spanish)..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs focus:border-cyan-500 outline-none"
               />
             </div>
@@ -151,33 +148,9 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
                   }`}
                 >
                   {script}
-                  {script !== 'All' && ` (${scriptCounts[script] || 0})`}
+                  {script === 'All' ? ` (${fullySupportedCount})` : ` (${scriptCounts[script] || 0})`}
                 </button>
               ))}
-            </div>
-
-            {/* Support Filter Toggle */}
-            <div className="flex items-center gap-1 border-l border-zinc-800 pl-3">
-              <button
-                onClick={() => setSupportFilter('all')}
-                className={`px-2 py-1 rounded text-[11px] ${
-                  supportFilter === 'all'
-                    ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-800'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                All Supported
-              </button>
-              <button
-                onClick={() => setSupportFilter('full_only')}
-                className={`px-2 py-1 rounded text-[11px] ${
-                  supportFilter === 'full_only'
-                    ? 'bg-emerald-950 text-emerald-300 font-bold border border-emerald-800'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                100% Full Only
-              </button>
             </div>
           </div>
 
@@ -185,7 +158,6 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredLanguages.map(item => {
               const lang = item.language;
-              const percent = Math.round(item.coverageRatio * 100);
 
               return (
                 <div
@@ -215,19 +187,10 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Support Badge */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {item.supported ? (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 text-[10px] font-mono font-bold">
-                          <CheckCircle2 size={12} />
-                          <span>100% Supported</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-400 border border-amber-800/80 text-[10px] font-mono font-bold">
-                          <AlertTriangle size={12} />
-                          <span>{percent}% ({item.matchedCount}/{item.totalRequired})</span>
-                        </div>
-                      )}
+                    {/* Support Badge (Guaranteed 100%) */}
+                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 text-[10px] font-mono font-bold flex-shrink-0">
+                      <CheckCircle2 size={12} />
+                      <span>100% Supported</span>
                     </div>
                   </div>
 
@@ -268,21 +231,6 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
                       "{lang.sampleText}"
                     </p>
                   </div>
-
-                  {/* If partial, show which characters are missing */}
-                  {item.missingChars.length > 0 && (
-                    <div className="pt-2 border-t border-rose-950/40 text-[11px] font-mono text-rose-300 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-zinc-500">Missing in font:</span>
-                      {item.missingChars.map((c, i) => (
-                        <span
-                          key={i}
-                          className="px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-800 font-bold"
-                        >
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -290,7 +238,7 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
 
           {filteredLanguages.length === 0 && (
             <div className="p-12 text-center text-zinc-500 font-mono text-sm border border-dashed border-zinc-800 rounded-2xl">
-              No languages match the current search filter "{searchQuery}".
+              No 100% supported languages match the current search filter "{searchQuery}".
             </div>
           )}
         </div>

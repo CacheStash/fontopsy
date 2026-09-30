@@ -113,77 +113,129 @@ export async function parseFontFile(
   // Parse font via opentype.js
   const font = opentype.parse(sfntBuffer);
 
+// Robust multi-platform name record extractor supporting Windows, Mac, Unicode, and numeric nameIDs
+function extractNameRecord(font: opentype.Font, propNames: string[], nameIds: number[]): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawFont = font as any;
+  const containers: Array<Record<string, any> | undefined> = [
+    rawFont.names?.windows,
+    rawFont.names?.macintosh,
+    rawFont.names?.unicode,
+    rawFont.names,
+    rawFont.tables?.name?.windows,
+    rawFont.tables?.name?.macintosh,
+    rawFont.tables?.name?.unicode,
+    rawFont.tables?.name,
+  ];
+
+  for (const container of containers) {
+    if (!container || typeof container !== 'object') continue;
+
+    // 1. Check string property names (e.g., 'designer', 'designerURL')
+    for (const prop of propNames) {
+      const val = container[prop];
+      if (val !== undefined && val !== null) {
+        if (typeof val === 'string' && val.trim().length > 0) return val.trim();
+        if (typeof val === 'object') {
+          if (typeof val.en === 'string' && val.en.trim().length > 0) return val.en.trim();
+          const firstKey = Object.keys(val)[0];
+          if (firstKey && typeof val[firstKey] === 'string' && val[firstKey].trim().length > 0) {
+            return val[firstKey].trim();
+          }
+        }
+      }
+    }
+
+    // 2. Check numeric name IDs (e.g., 9 for designer, 8 for manufacturer, 0 for copyright)
+    for (const id of nameIds) {
+      const val = container[id] || container[String(id)];
+      if (val !== undefined && val !== null) {
+        if (typeof val === 'string' && val.trim().length > 0) return val.trim();
+        if (typeof val === 'object') {
+          if (typeof val.en === 'string' && val.en.trim().length > 0) return val.en.trim();
+          const firstKey = Object.keys(val)[0];
+          if (firstKey && typeof val[firstKey] === 'string' && val[firstKey].trim().length > 0) {
+            return val[firstKey].trim();
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Fallback: check raw records array if available
+  if (Array.isArray(rawFont.tables?.name?.records)) {
+    for (const id of nameIds) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rec = rawFont.tables.name.records.find((r: any) => r.nameID === id && r.string);
+      if (rec && typeof rec.string === 'string' && rec.string.trim().length > 0) {
+        return rec.string.trim();
+      }
+    }
+  }
+
+  return '';
+}
+
   // Extract Metadata
-  const names = font.names;
-  const namesObj = names as unknown as Record<string, Record<string, string> | undefined>;
   const os2 = font.tables.os2 || {};
   const head = font.tables.head || {};
   const hhea = font.tables.hhea || {};
 
   const familyName =
-    names.fontFamily?.en ||
-    names.fontFamily?.[Object.keys(names.fontFamily)[0]] ||
+    extractNameRecord(font, ['preferredFamily', 'fontFamily'], [16, 1]) ||
     fileName.replace(/\.[^/.]+$/, '');
 
   const styleName =
-    names.fontSubfamily?.en ||
-    names.fontSubfamily?.[Object.keys(names.fontSubfamily)[0]] ||
+    extractNameRecord(font, ['preferredSubfamily', 'fontSubfamily'], [17, 2]) ||
     'Regular';
 
   const fullName =
-    names.fullName?.en ||
-    names.fullName?.[Object.keys(names.fullName)[0]] ||
+    extractNameRecord(font, ['fullName'], [4]) ||
     `${familyName} ${styleName}`;
 
   const postscriptName =
-    names.postScriptName?.en ||
-    names.postScriptName?.[Object.keys(names.postScriptName)[0]] ||
+    extractNameRecord(font, ['postScriptName'], [6]) ||
     familyName.replace(/\s+/g, '-');
 
   const version =
-    names.version?.en ||
-    names.version?.[Object.keys(names.version)[0]] ||
+    extractNameRecord(font, ['version'], [5]) ||
     '1.000';
 
   const uniqueId =
-    namesObj.uniqueID?.en ||
-    (namesObj.uniqueID ? namesObj.uniqueID[Object.keys(namesObj.uniqueID)[0]] : '') ||
-    '';
+    extractNameRecord(font, ['uniqueID'], [3]);
 
   const designer =
-    names.designer?.en ||
-    names.designer?.[Object.keys(names.designer)[0]] ||
+    extractNameRecord(font, ['designer'], [9]) ||
     'Unknown';
 
   const designerUrl =
-    names.designerURL?.en ||
-    names.designerURL?.[Object.keys(names.designerURL)[0]] ||
-    '';
+    extractNameRecord(font, ['designerURL'], [12]);
 
   const manufacturer =
-    names.manufacturer?.en ||
-    names.manufacturer?.[Object.keys(names.manufacturer)[0]] ||
-    '';
+    extractNameRecord(font, ['manufacturer'], [8]);
+
+  const vendorId =
+    (typeof os2.achVendID === 'string' && os2.achVendID.trim().length > 0)
+      ? os2.achVendID.trim()
+      : '';
+
+  const vendorUrl =
+    extractNameRecord(font, ['vendorURL', 'manufacturerURL'], [11]);
 
   const copyright =
-    names.copyright?.en ||
-    names.copyright?.[Object.keys(names.copyright)[0]] ||
-    '';
+    extractNameRecord(font, ['copyright'], [0]);
+
+  const trademark =
+    extractNameRecord(font, ['trademark'], [7]);
 
   const license =
-    names.license?.en ||
-    names.license?.[Object.keys(names.license)[0]] ||
-    '';
+    extractNameRecord(font, ['license'], [13]);
 
   const licenseUrl =
-    names.licenseURL?.en ||
-    names.licenseURL?.[Object.keys(names.licenseURL)[0]] ||
-    '';
+    extractNameRecord(font, ['licenseURL'], [14]);
 
   const description =
-    names.description?.en ||
-    names.description?.[Object.keys(names.description)[0]] ||
-    '';
+    extractNameRecord(font, ['description'], [10]);
 
   const upm = font.unitsPerEm || head.unitsPerEm || 1000;
   const ascent = font.ascender || hhea.ascender || os2.sTypoAscender || 800;
@@ -385,7 +437,10 @@ export async function parseFontFile(
     designer,
     designerUrl,
     manufacturer,
+    vendorId,
+    vendorUrl,
     copyright,
+    trademark,
     license,
     licenseUrl,
     description,

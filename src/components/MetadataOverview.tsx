@@ -144,7 +144,37 @@ export const MetadataOverview: React.FC<MetadataOverviewProps> = ({ metadata }) 
             {metadata.manufacturer && (
               <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-zinc-800/40 gap-1">
                 <span className="text-zinc-500">Manufacturer / Foundry:</span>
-                <span className="text-zinc-300">{metadata.manufacturer}</span>
+                <span className="text-zinc-300">
+                  {metadata.vendorUrl ? (
+                    <a
+                      href={metadata.vendorUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-cyan-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>{metadata.manufacturer}</span>
+                      <Globe size={12} />
+                    </a>
+                  ) : (
+                    metadata.manufacturer
+                  )}
+                </span>
+              </div>
+            )}
+
+            {metadata.vendorId && (
+              <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-zinc-800/40 gap-1">
+                <span className="text-zinc-500">Vendor ID:</span>
+                <span className="text-amber-400 font-mono font-semibold">{metadata.vendorId}</span>
+              </div>
+            )}
+
+            {metadata.description && (
+              <div className="py-1.5 border-b border-zinc-800/40">
+                <span className="text-zinc-500 block mb-1">Description:</span>
+                <p className="text-zinc-300 text-[11px] leading-relaxed">
+                  {metadata.description}
+                </p>
               </div>
             )}
 
@@ -157,9 +187,31 @@ export const MetadataOverview: React.FC<MetadataOverviewProps> = ({ metadata }) 
               </div>
             )}
 
+            {metadata.trademark && (
+              <div className="py-1.5 border-b border-zinc-800/40">
+                <span className="text-zinc-500 block mb-1">Trademark:</span>
+                <p className="text-zinc-400 text-[11px] leading-relaxed">
+                  {metadata.trademark}
+                </p>
+              </div>
+            )}
+
             {metadata.license && (
               <div className="py-1.5">
-                <span className="text-zinc-500 block mb-1">License:</span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-zinc-500">License:</span>
+                  {metadata.licenseUrl && (
+                    <a
+                      href={metadata.licenseUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
+                    >
+                      <span>License Info</span>
+                      <Globe size={11} />
+                    </a>
+                  )}
+                </div>
                 <p className="text-zinc-400 text-[11px] leading-relaxed">
                   {metadata.license}
                 </p>

@@ -12,7 +12,10 @@ export interface FontMetadata {
   designer: string;
   designerUrl: string;
   manufacturer: string;
+  vendorId: string;
+  vendorUrl: string;
   copyright: string;
+  trademark: string;
   license: string;
   licenseUrl: string;
   description: string;

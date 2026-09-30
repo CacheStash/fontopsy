@@ -1,10 +1,71 @@
-import React, { useState, useMemo } from 'react';
+/**
+ * PANDUAN PENGEMBANG (INTERNAL GUIDE):
+ * - `RasterMetricTile`: Komponen render piksel kanvas (HTML5 Canvas 2D) untuk me-rasterisasi
+ *   eksposur kurva vektor master font pada Alternate Popover & Glyph Inspector.
+ *   Tujuannya mencegah pembajakan/scraping koordinat kurva Bézier master font dari DOM browser.
+ */
+
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type opentype from 'opentype.js';
-import {
-  detectLanguageCoverage,
-  detectScriptBlockCoverage,
-} from '../utils/languageData';
-import { Globe, Search, CheckCircle2, BookOpen } from 'lucide-react';
+import { detectLanguageCoverage } from '../utils/languageData';
+import { classifyFontGlyphs } from '../utils/glyphClassifier';
+import { Globe, Search, CheckCircle2, Sparkles } from 'lucide-react';
+
+interface RasterMetricTileProps {
+  glyphIdx: number;
+  size?: number;
+  fontObj: opentype.Font | null;
+  color?: string;
+  className?: string;
+}
+
+const RasterMetricTile: React.FC<RasterMetricTileProps> = React.memo(
+  ({ glyphIdx, size = 28, fontObj, color = '#22d3ee', className = '' }) => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || !fontObj) return;
+
+      const glyph = fontObj.glyphs?.get(glyphIdx);
+      if (!glyph) return;
+
+      const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 2, 2.5) : 2;
+      canvas.width = Math.round(size * dpr);
+      canvas.height = Math.round(size * dpr);
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(dpr, dpr);
+
+      const unitsPerEm = fontObj.unitsPerEm || 1000;
+      const renderSize = size * 0.72;
+      const scale = renderSize / unitsPerEm;
+      const baseline = renderSize;
+      const advanceWidth = (glyph.advanceWidth || unitsPerEm * 0.6) * scale;
+      const xOffset = Math.max(0, (size - advanceWidth) / 2);
+
+      try {
+        const path = glyph.getPath(xOffset, baseline, renderSize);
+        ctx.fillStyle = color;
+        path.draw(ctx);
+        ctx.fill();
+      } catch {
+        // Ignored
+      }
+    }, [glyphIdx, size, fontObj, color]);
+
+    return (
+      <canvas
+        ref={canvasRef}
+        style={{ width: `${size}px`, height: `${size}px` }}
+        className={`pointer-events-none ${className}`}
+      />
+    );
+  }
+);
 
 interface LanguageMatrixViewProps {
   font: opentype.Font;
@@ -19,7 +80,7 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
   featureSettingsCss,
   variationSettingsCss = '"normal"',
 }) => {
-  const [subView, setSubView] = useState<'languages' | 'script_blocks'>('languages');
+  const [subView, setSubView] = useState<'languages' | 'features'>('languages');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedScript, setSelectedScript] = useState<'All' | 'Latin' | 'Cyrillic' | 'Greek'>('All');
 
@@ -28,9 +89,9 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
     return detectLanguageCoverage(font);
   }, [font]);
 
-  // Compute script block coverage
-  const scriptBlockResults = useMemo(() => {
-    return detectScriptBlockCoverage(font);
+  // Compute non-overlapping glyph classification (100% font glyphs accounted for, zero overlap)
+  const classification = useMemo(() => {
+    return classifyFontGlyphs(font);
   }, [font]);
 
   // Filter ONLY languages that are 100% supported!
@@ -71,24 +132,47 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
       <div className="p-5 rounded-2xl lab-card border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Globe className="text-cyan-400" size={20} />
+            {subView === 'languages' ? (
+              <Globe className="text-cyan-400" size={20} />
+            ) : (
+              <Sparkles className="text-amber-400" size={20} />
+            )}
             <h3 className="font-bold text-base font-mono text-white">
-              Support for{' '}
-              <span className="text-cyan-400 underline decoration-cyan-500/50">
-                {fullySupportedCount} languages
-              </span>{' '}
-              detected
+              {subView === 'languages' ? (
+                <>
+                  Support for{' '}
+                  <span className="text-cyan-400 underline decoration-cyan-500/50">
+                    {fullySupportedCount} languages
+                  </span>{' '}
+                  detected
+                </>
+              ) : (
+                <>
+                  Font Glyph Features & Sets:{' '}
+                  <span className="text-amber-400">
+                    {classification.totalGlyphs} Total Glyphs
+                  </span>
+                </>
+              )}
             </h3>
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 font-bold">
-              100% Full Support
-            </span>
+            {subView === 'languages' ? (
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 font-bold">
+                100% Full Support
+              </span>
+            ) : (
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/80 font-bold">
+                {classification.categories.length} Categories • Zero Overlap
+              </span>
+            )}
           </div>
           <p className="text-xs text-zinc-400 font-mono mt-1">
-            Displaying only languages with 100% glyph coverage.
+            {subView === 'languages'
+              ? 'Displaying only languages with 100% glyph coverage.'
+              : 'Complete non-overlapping glyph distribution. Sum of all categories matches total font glyphs.'}
           </p>
         </div>
 
-        {/* Sub-view switcher: Languages vs Script Blocks */}
+        {/* Sub-view switcher: Languages vs Features */}
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono">
           <button
             onClick={() => setSubView('languages')}
@@ -102,15 +186,15 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
             <span>Supported Languages ({fullySupportedCount})</span>
           </button>
           <button
-            onClick={() => setSubView('script_blocks')}
+            onClick={() => setSubView('features')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
-              subView === 'script_blocks'
+              subView === 'features'
                 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            <BookOpen size={14} />
-            <span>Script Blocks ({scriptBlockResults.length})</span>
+            <Sparkles size={14} />
+            <span>Features ({classification.categories.length})</span>
           </button>
         </div>
       </div>
@@ -244,75 +328,90 @@ export const LanguageMatrixView: React.FC<LanguageMatrixViewProps> = ({
         </div>
       )}
 
-      {/* VIEW 2: SCRIPT BLOCKS MATRIX */}
-      {subView === 'script_blocks' && (
+      {/* VIEW 2: FEATURES & NON-OVERLAPPING GLYPH SETS */}
+      {subView === 'features' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {scriptBlockResults.map(block => {
-              const percent = Math.round(block.coverageRatio * 100);
-              const isFull = percent === 100;
-
+            {classification.categories.map(cat => {
               return (
                 <div
-                  key={block.name}
-                  className="p-5 rounded-2xl lab-card border-zinc-800 space-y-3"
+                  key={cat.id}
+                  className="p-5 rounded-2xl lab-card border-zinc-800 space-y-3 flex flex-col justify-between"
                 >
+                  {/* Category Header */}
                   <div className="flex items-start justify-between gap-2 pb-2 border-b border-zinc-800">
                     <div>
-                      <span className="text-cyan-400 font-bold text-xs font-mono block">
-                        {block.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyan-400 font-bold text-xs font-mono">
+                          {cat.name}
+                        </span>
+                        {cat.tag && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80 font-bold">
+                            {cat.tag}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[11px] text-zinc-400 font-mono block mt-0.5">
-                        {block.description}
+                        {cat.description}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                          isFull
-                            ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
-                            : 'bg-amber-950 text-amber-400 border-amber-800'
-                        }`}
-                      >
-                        {block.matchedChars.length} / {block.chars.replace(/\s+/g, '').length} ({percent}%)
+                      <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">
+                        {cat.count} Glyphs
                       </span>
                     </div>
                   </div>
 
-                  {/* Character Matrix */}
-                  <div
-                    style={{
-                      fontFamily: `'${fontFamily}', sans-serif`,
-                      fontSize: '22px',
-                      lineHeight: 1.5,
-                      fontFeatureSettings: featureSettingsCss,
-                      fontVariationSettings: variationSettingsCss,
-                    }}
-                    className="text-zinc-200 break-words py-1 select-all"
-                  >
-                    {block.chars}
+                  {/* Glyph Tiles Display */}
+                  <div className="flex flex-wrap gap-1.5 py-2 max-h-72 overflow-y-auto">
+                    {cat.glyphIndices.map(gid => {
+                      const g = font.glyphs.get(gid);
+                      const hasUnicode = g && g.unicode !== undefined && g.unicode > 32;
+                      const charStr = hasUnicode ? String.fromCodePoint(g.unicode!) : undefined;
+
+                      return (
+                        <div
+                          key={gid}
+                          className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800/80 hover:border-cyan-500/80 hover:bg-zinc-800 transition-all select-none group relative"
+                          title={
+                            g
+                              ? `Glyph #${gid} (${g.name || 'unnamed'})${
+                                  g.unicode ? ` • U+${g.unicode.toString(16).toUpperCase().padStart(4, '0')}` : ''
+                                }`
+                              : `Glyph #${gid}`
+                          }
+                        >
+                          {charStr ? (
+                            <span
+                              style={{
+                                fontFamily: `'${fontFamily}', sans-serif`,
+                                fontSize: '18px',
+                                fontFeatureSettings: featureSettingsCss,
+                                fontVariationSettings: variationSettingsCss,
+                              }}
+                              className="text-zinc-100 group-hover:text-cyan-300 pointer-events-none"
+                            >
+                              {charStr}
+                            </span>
+                          ) : (
+                            <RasterMetricTile
+                              glyphIdx={gid}
+                              size={20}
+                              fontObj={font}
+                              color="#22d3ee"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  {/* Missing Glyphs Alert if not 100% */}
-                  {block.missingChars.length > 0 && (
-                    <div className="pt-2 border-t border-zinc-800/80 text-[11px] font-mono text-zinc-400 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-rose-400 font-semibold">Missing ({block.missingChars.length}):</span>
-                      {block.missingChars.slice(0, 16).map((c, i) => (
-                        <span
-                          key={i}
-                          className="px-1.5 py-0.2 rounded bg-zinc-900 text-rose-300 border border-zinc-700 font-mono"
-                        >
-                          {c}
-                        </span>
-                      ))}
-                      {block.missingChars.length > 16 && (
-                        <span className="text-zinc-500 text-[10px]">
-                          +{block.missingChars.length - 16} more
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {/* Category Footer Summary */}
+                  <div className="pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                    <span>Category ID: {cat.id}</span>
+                    <span>{cat.count} / {classification.totalGlyphs} ({( (cat.count / classification.totalGlyphs) * 100 ).toFixed(1)}%)</span>
+                  </div>
                 </div>
               );
             })}

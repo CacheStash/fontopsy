@@ -26,7 +26,6 @@ import {
   GripVertical,
   Sparkles,
   Type,
-  BookOpen,
 } from 'lucide-react';
 
 interface RasterMetricTileProps {
@@ -728,7 +727,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
             [
               ['type_tester', 'Type Tester & Layer Mode'],
               ['waterfall', 'Waterfall Specimen (72px → 8px)'],
-              ['language_matrix', 'Language & Script Matrix'],
+              ['language_matrix', 'Language & Features'],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -742,7 +741,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
             >
               {key === 'type_tester' && <Type size={14} />}
               {key === 'waterfall' && <Layers size={14} />}
-              {key === 'language_matrix' && <BookOpen size={14} />}
+              {key === 'language_matrix' && <Sparkles size={14} />}
               <span>{label}</span>
             </button>
           ))}

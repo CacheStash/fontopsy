@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ParsedFontResult } from '../types/font';
+import type { BrandConfig } from '../utils/brand';
 import { Upload, Sparkles, Sun, Moon, FileCode } from 'lucide-react';
 
 interface NavbarProps {
@@ -13,6 +14,7 @@ interface NavbarProps {
   onOpenFilePicker: () => void;
   onOpenExporter: () => void;
   onLoadSample: () => void;
+  brand?: BrandConfig;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,6 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenFilePicker,
   onOpenExporter,
   onLoadSample,
+  brand,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
@@ -35,9 +38,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-white text-base">FONTOPSY</span>
-              <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded bg-zinc-800 text-cyan-400 border border-zinc-700">
-                v1.1
-              </span>
+              {brand ? (
+                <a
+                  href={brand.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono text-zinc-400 hover:text-cyan-400 transition-colors"
+                  title={`Visit ${brand.name}`}
+                >
+                  by {brand.name}
+                </a>
+              ) : (
+                <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded bg-zinc-800 text-cyan-400 border border-zinc-700">
+                  v1.1
+                </span>
+              )}
             </div>
             <div className="text-[11px] text-zinc-400 font-mono hidden sm:block">
               Font Inspector & Layers Tester

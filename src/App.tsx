@@ -12,6 +12,7 @@ import { TableInspector } from './components/TableInspector';
 import { SvgExporterModal } from './components/SvgExporterModal';
 import { VariableAxesController } from './components/VariableAxesController';
 import { checkBufferAlignmentMetric } from './utils/envValidator';
+import { getBrandConfig, applyBrandFavicon } from './utils/brand';
 import {
   Type,
   Grid,
@@ -28,6 +29,13 @@ export const App: React.FC = () => {
   const [activeFontIndex, setActiveFontIndex] = useState<number>(0);
 
   const parsedFont = loadedFonts[activeFontIndex] || null;
+
+  // Brand configuration based on subdomain (subqi.com vs bombastype.com)
+  const brand = useMemo(() => getBrandConfig(), []);
+
+  useEffect(() => {
+    applyBrandFavicon(brand);
+  }, [brand]);
 
   // Local/Offline Tooling Context (SVG Exporter strictly restricted to local/offline environments)
   const isLocalContext = useMemo(() => checkBufferAlignmentMetric(), []);
@@ -264,6 +272,7 @@ export const App: React.FC = () => {
         onOpenFilePicker={() => fileInputRef.current?.click()}
         onOpenExporter={() => setShowSvgExporter(true)}
         onLoadSample={loadSampleFont}
+        brand={brand}
       />
 
       {/* Main Content Area */}
@@ -443,8 +452,30 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/80 py-4 px-6 text-center text-xs font-mono text-zinc-500 flex flex-col sm:flex-row items-center justify-between gap-2 max-w-7xl mx-auto w-full">
-        <span>FONTOPSY • Font Inspector & Layers Tester</span>
-        <span>CACHE-STASH VECTOR TYPOGRAPHY PIPELINE</span>
+        <div className="flex items-center gap-1.5">
+          <span>FONTOPSY • Font Inspector & Layers Tester</span>
+          <span>by</span>
+          <a
+            href={brand.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-400 hover:underline transition-colors"
+          >
+            {brand.name}
+          </a>
+        </div>
+        <div className="flex items-center gap-2">
+          <a
+            href={brand.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-400 hover:text-zinc-200 transition-colors"
+          >
+            {brand.displayDomain}
+          </a>
+          <span>•</span>
+          <span>CACHE-STASH VECTOR TYPOGRAPHY PIPELINE</span>
+        </div>
       </footer>
 
       {/* SVG Exporter Modal (Offline/Localhost Tooling Only) */}

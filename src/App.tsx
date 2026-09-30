@@ -88,10 +88,10 @@ export const App: React.FC = () => {
 
       const primary = parsedResults[0];
       if (primary) {
-        // Initialize feature toggles
-        const initialToggles: Record<string, boolean> = {};
+        // Initialize feature toggles (kern always on by default)
+        const initialToggles: Record<string, boolean> = { kern: true };
         primary.features.forEach(f => {
-          initialToggles[f.tag] = f.enabled;
+          initialToggles[f.tag] = f.tag === 'kern' ? true : f.enabled;
         });
         setFeatureToggles(initialToggles);
 
@@ -117,9 +117,9 @@ export const App: React.FC = () => {
   // Sync telemetry when active style switches
   useEffect(() => {
     if (!parsedFont) return;
-    const initialToggles: Record<string, boolean> = {};
+    const initialToggles: Record<string, boolean> = { kern: true };
     parsedFont.features.forEach(f => {
-      initialToggles[f.tag] = f.enabled;
+      initialToggles[f.tag] = f.tag === 'kern' ? true : f.enabled;
     });
     setFeatureToggles(initialToggles);
 
@@ -150,13 +150,17 @@ export const App: React.FC = () => {
     loadSampleFont();
   }, []);
 
-  // Compute CSS font-feature-settings string
+  // Compute CSS font-feature-settings string (kern is ALWAYS enabled by default)
   const cssFeatureString = useMemo(() => {
     const activeTags = Object.entries(featureToggles)
       .filter(([, enabled]) => enabled)
       .map(([tag]) => `"${tag}" 1`);
 
-    return activeTags.length > 0 ? activeTags.join(', ') : '"normal"';
+    if (featureToggles['kern'] !== false && !activeTags.some(t => t.startsWith('"kern"'))) {
+      activeTags.unshift('"kern" 1');
+    }
+
+    return activeTags.length > 0 ? activeTags.join(', ') : '"kern" 1';
   }, [featureToggles]);
 
   const handleToggleFeature = (tag: string, enabled: boolean) => {

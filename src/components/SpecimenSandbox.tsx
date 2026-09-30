@@ -179,8 +179,8 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
   const [draggedLayerIdx, setDraggedLayerIdx] = useState<number | null>(null);
   const [isAddLayerOpen, setIsAddLayerOpen] = useState(false);
 
-  // Dynamic OpenType Feature Toggles
-  const [activeFeatures, setActiveFeatures] = useState<Record<string, boolean>>({});
+  // Dynamic OpenType Feature Toggles (kern is default ON)
+  const [activeFeatures, setActiveFeatures] = useState<Record<string, boolean>>({ kern: true });
 
   // Alternates state
   const [charOverrides, setCharOverrides] = useState<Record<number, string>>({});
@@ -640,16 +640,31 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
     setDraggedLayerIdx(null);
   };
 
-  // Compute composite active OpenType features
+  // Compute composite active OpenType features (kern is ALWAYS enabled by default)
   const globalActiveFeatureString = useMemo(() => {
-    const toggled = Object.entries(activeFeatures)
-      .filter(([, on]) => on)
-      .map(([t]) => `"${t}" 1`);
+    const activeMap = new Map<string, number>();
 
-    if (toggled.length > 0) {
-      return toggled.join(', ');
+    // Parse base features from featureSettingsCss
+    if (featureSettingsCss && featureSettingsCss !== 'normal' && featureSettingsCss !== '"normal"') {
+      featureSettingsCss.split(',').forEach(p => {
+        const m = p.trim().match(/"([^"]+)"\s*(\d+)?/);
+        if (m) activeMap.set(m[1], m[2] ? parseInt(m[2], 10) : 1);
+      });
     }
-    return featureSettingsCss || 'normal';
+
+    // Apply local toggles
+    Object.entries(activeFeatures).forEach(([tag, on]) => {
+      if (on) activeMap.set(tag, 1);
+      else activeMap.delete(tag);
+    });
+
+    // Mandatory default: kern is always enabled unless explicitly turned off
+    if (activeFeatures['kern'] !== false && !activeMap.has('kern')) {
+      activeMap.set('kern', 1);
+    }
+
+    const compiled = Array.from(activeMap.entries()).map(([t, v]) => `"${t}" ${v}`);
+    return compiled.length > 0 ? compiled.join(', ') : '"kern" 1';
   }, [activeFeatures, featureSettingsCss]);
 
   // Render text spans synchronized across single / multi-layered views

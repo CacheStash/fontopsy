@@ -219,6 +219,68 @@ export const SvgExporterModal: React.FC<SvgExporterModalProps> = ({
                 <Maximize2 size={13} />
               </button>
             </div>
+
+            {/* Row 2: Glyphs Spacing / Gap Controls (H/V Tracking for Swashes & Alternates) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-zinc-800/80 w-full">
+              <div className="flex flex-wrap items-center gap-6">
+                {/* Horizontal Spacing */}
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-400 font-medium">H-Spacing (Width):</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="5"
+                    value={options.spacingH}
+                    onChange={e =>
+                      setOptions(prev => ({ ...prev, spacingH: Number(e.target.value) }))
+                    }
+                    className="w-28 accent-cyan-400 cursor-pointer"
+                  />
+                  <span className="text-cyan-400 font-bold min-w-[36px]">{options.spacingH}%</span>
+                </div>
+
+                {/* Vertical Spacing */}
+                <div className="flex items-center gap-2 border-l border-zinc-800 pl-4">
+                  <span className="text-zinc-400 font-medium">V-Spacing (Leading):</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="5"
+                    value={options.spacingV}
+                    onChange={e =>
+                      setOptions(prev => ({ ...prev, spacingV: Number(e.target.value) }))
+                    }
+                    className="w-28 accent-cyan-400 cursor-pointer"
+                  />
+                  <span className="text-cyan-400 font-bold min-w-[36px]">{options.spacingV}%</span>
+                </div>
+              </div>
+
+              {/* Spacing Presets */}
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <span className="text-zinc-500 mr-1">Presets:</span>
+                {[
+                  { label: 'Compact', h: 10, v: 15 },
+                  { label: 'Normal', h: 30, v: 35 },
+                  { label: 'Wide', h: 60, v: 60 },
+                  { label: 'Swash / Extra Wide', h: 110, v: 90 },
+                ].map(p => (
+                  <button
+                    key={p.label}
+                    onClick={() => setOptions(prev => ({ ...prev, spacingH: p.h, spacingV: p.v }))}
+                    className={`px-2 py-0.5 rounded border transition-colors ${
+                      options.spacingH === p.h && options.spacingV === p.v
+                        ? 'bg-cyan-950 text-cyan-300 border-cyan-700/80 font-bold'
+                        : 'bg-zinc-800 text-zinc-400 hover:text-white border-zinc-700/60'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* SVG Canvas Preview */}

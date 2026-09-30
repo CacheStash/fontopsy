@@ -19,6 +19,8 @@ import type opentype from 'opentype.js';
 
 export interface SvgExportOptions {
   columns: number;
+  spacingH: number; // Horizontal gap / tracking (0% to 200%)
+  spacingV: number; // Vertical gap / leading (0% to 200%)
   includeGuides: boolean;
   fillColor: string;
   separateCategoryRows: boolean;
@@ -26,6 +28,8 @@ export interface SvgExportOptions {
 
 export const DEFAULT_SVG_OPTIONS: SvgExportOptions = {
   columns: 26, // 26 columns perfectly aligns A-Z and a-z across single rows
+  spacingH: 30, // 30% horizontal safe margin
+  spacingV: 35, // 35% vertical safe margin
   includeGuides: false, // Pure clean vector shapes by default
   fillColor: '#18181b',
   separateCategoryRows: true, // Start each category on a fresh row
@@ -261,9 +265,12 @@ export function generateFontSvgMatrix(
   const descender = font.descender || Math.round(-upm * 0.2);
   const emHeight = ascender - descender;
 
-  // Generous safe cell dimensions to guarantee ample margins and prevent any collision/overlap
-  const cellWidth = Math.round(upm * 1.35);
-  const cellHeight = Math.round(emHeight * 1.35);
+  // Dynamic cell dimensions with user-controlled horizontal & vertical spacing multipliers
+  const hMultiplier = 1.1 + (Math.max(0, opts.spacingH) / 100);
+  const vMultiplier = 1.1 + (Math.max(0, opts.spacingV) / 100);
+
+  const cellWidth = Math.round(upm * hMultiplier);
+  const cellHeight = Math.round(emHeight * vMultiplier);
   const padding = Math.round(upm * 0.25);
 
   const cols = Math.max(1, opts.columns);

@@ -12,13 +12,13 @@
  * 7. Remaining Glyphs (all unassigned unicodes, icons, and unmapped glyphs)
  * 
  * Guarantee: sum(all ordered glyphs) === font.glyphs.length (Zero missing, zero duplicates).
+ * No text labels underneath glyphs - pure vector shapes with safe margins.
  */
 
 import type opentype from 'opentype.js';
 
 export interface SvgExportOptions {
   columns: number;
-  includeLabels: boolean;
   includeGuides: boolean;
   fillColor: string;
   separateCategoryRows: boolean;
@@ -26,8 +26,7 @@ export interface SvgExportOptions {
 
 export const DEFAULT_SVG_OPTIONS: SvgExportOptions = {
   columns: 26, // 26 columns perfectly aligns A-Z and a-z across single rows
-  includeLabels: true,
-  includeGuides: true,
+  includeGuides: false, // Pure clean vector shapes by default
   fillColor: '#18181b',
   separateCategoryRows: true, // Start each category on a fresh row
 };
@@ -56,6 +55,20 @@ export interface SvgExportResult {
 }
 
 const KEYBOARD_SYMBOLS = '!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+
+function xmlEscape(val: string): string {
+  return val
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function safeXmlId(val: string): string {
+  const sanitized = val.replace(/[^a-zA-Z0-9_-]/g, '_');
+  return sanitized.length > 0 ? sanitized : 'item';
+}
 
 export function getOrderedFontGlyphs(font: opentype.Font): {
   orderedItems: OrderedGlyphItem[];
@@ -248,11 +261,10 @@ export function generateFontSvgMatrix(
   const descender = font.descender || Math.round(-upm * 0.2);
   const emHeight = ascender - descender;
 
-  // Grid Cell Geometry
-  const cellWidth = Math.round(upm * 1.1);
-  const labelHeight = opts.includeLabels ? Math.round(upm * 0.22) : 0;
-  const cellHeight = Math.round(emHeight * 1.05) + labelHeight;
-  const padding = Math.round(upm * 0.15);
+  // Generous safe cell dimensions to guarantee ample margins and prevent any collision/overlap
+  const cellWidth = Math.round(upm * 1.35);
+  const cellHeight = Math.round(emHeight * 1.35);
+  const padding = Math.round(upm * 0.25);
 
   const cols = Math.max(1, opts.columns);
   let rows = 0;
@@ -307,8 +319,8 @@ export function generateFontSvgMatrix(
   const totalWidth = padding * 2 + cols * cellWidth;
   const totalHeight = padding * 2 + rows * cellHeight;
 
-  // Construct SVG Elements
-  const safeFontName = fontName.replace(/["'&<>]/g, '');
+  // Construct SVG Elements with 100% strict XML validity
+  const safeFontName = xmlEscape(fontName);
   const dateStr = new Date().toISOString();
 
   let svg = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -326,12 +338,11 @@ export function generateFontSvgMatrix(
 
   svg += `  <style>\n`;
   svg += `    .fontopsy-glyph { fill: ${opts.fillColor}; }\n`;
-  svg += `    .fontopsy-label { font-family: monospace, sans-serif; font-size: ${Math.round(upm * 0.08)}px; fill: #71717a; text-anchor: middle; }\n`;
   svg += `    .fontopsy-guide-cell { fill: none; stroke: #e4e4e7; stroke-width: ${Math.max(1, Math.round(upm * 0.002))}; stroke-dasharray: 4,4; opacity: 0.7; }\n`;
   svg += `    .fontopsy-guide-baseline { stroke: #06b6d4; stroke-width: ${Math.max(1, Math.round(upm * 0.003))}; opacity: 0.6; }\n`;
   svg += `  </style>\n\n`;
 
-  // Background
+  // Clean White Background for Illustrator/Corel compatibility
   svg += `  <rect width="100%" height="100%" fill="#ffffff" />\n\n`;
 
   // Category Groups
@@ -340,25 +351,27 @@ export function generateFontSvgMatrix(
     if (items.length === 0) return;
 
     svg += `  <!-- Category: ${cat.name} (${items.length} glyphs) -->\n`;
-    svg += `  <g id="${cat.id}" data-category-name="${cat.name}" data-count="${items.length}">\n`;
+    svg += `  <g id="${cat.id}" data-category-name="${xmlEscape(cat.name)}" data-count="${items.length}">\n`;
 
     items.forEach(item => {
       const g = font.glyphs.get(item.gid);
       const adv = g.advanceWidth || upm;
-      // Horizontally center the glyph within the cellWidth
+      // Horizontally and vertically center the glyph within the safe cell
       const originX = Math.round(item.x + (cellWidth - adv) / 2);
-      // Align baseline
-      const originY = Math.round(item.y + ascender);
+      const originY = Math.round(item.y + (cellHeight - emHeight) / 2 + ascender);
 
-      svg += `    <g id="glyph_${item.gid}_${encodeURIComponent(item.name)}" data-gid="${item.gid}" data-name="${item.name}"${item.unicodeHex ? ` data-unicode="${item.unicodeHex}"` : ''}>\n`;
+      const safeId = `glyph_${item.gid}_${safeXmlId(item.name)}`;
+      const safeName = xmlEscape(item.name);
 
-      // Optional Guides
+      svg += `    <g id="${safeId}" data-gid="${item.gid}" data-name="${safeName}"${item.unicodeHex ? ` data-unicode="${item.unicodeHex}"` : ''}>\n`;
+
+      // Optional Metric Guides (subtle boundary & baseline)
       if (opts.includeGuides) {
         svg += `      <rect class="fontopsy-guide-cell" x="${item.x}" y="${item.y}" width="${cellWidth}" height="${cellHeight}" />\n`;
         svg += `      <line class="fontopsy-guide-baseline" x1="${item.x}" y1="${originY}" x2="${item.x + cellWidth}" y2="${originY}" />\n`;
       }
 
-      // Glyph Path
+      // Pure Glyph Vector Path (No text labels)
       try {
         const p = g.getPath(originX, originY, upm);
         const pathData = p.toPathData(2);
@@ -367,23 +380,6 @@ export function generateFontSvgMatrix(
         }
       } catch (err) {
         console.warn(`Failed to generate path for glyph ${item.gid} (${item.name}):`, err);
-      }
-
-      // Optional Labels
-      if (opts.includeLabels) {
-        const textY = item.y + cellHeight - Math.round(labelHeight * 0.35);
-        const labelText = item.char ? `${item.char}  ${item.name}` : item.name;
-        const safeLabel = labelText.replace(/[&<>"']/g, c => {
-          switch (c) {
-            case '&': return '&amp;';
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '"': return '&quot;';
-            case "'": return '&apos;';
-            default: return c;
-          }
-        });
-        svg += `      <text class="fontopsy-label" x="${Math.round(item.x + cellWidth / 2)}" y="${textY}">${safeLabel}</text>\n`;
       }
 
       svg += `    </g>\n`;

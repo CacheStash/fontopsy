@@ -59,11 +59,6 @@ export const SvgExporterModal: React.FC<SvgExporterModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  // Convert SVG string to data URI for direct clean preview iframe/image
-  const svgDataUri = useMemo(() => {
-    return `data:image/svg+xml;utf8,${encodeURIComponent(exportResult.svgString)}`;
-  }, [exportResult.svgString]);
-
   const COLOR_CHOICES = [
     { label: 'Dark', value: '#18181b' },
     { label: 'White', value: '#ffffff' },
@@ -167,18 +162,6 @@ export const SvgExporterModal: React.FC<SvgExporterModalProps> = ({
                 <label className="flex items-center gap-1.5 cursor-pointer text-zinc-300 hover:text-white select-none">
                   <input
                     type="checkbox"
-                    checked={options.includeLabels}
-                    onChange={e =>
-                      setOptions(prev => ({ ...prev, includeLabels: e.target.checked }))
-                    }
-                    className="accent-cyan-400 rounded"
-                  />
-                  <span>Glyph Labels</span>
-                </label>
-
-                <label className="flex items-center gap-1.5 cursor-pointer text-zinc-300 hover:text-white select-none">
-                  <input
-                    type="checkbox"
                     checked={options.includeGuides}
                     onChange={e =>
                       setOptions(prev => ({ ...prev, includeGuides: e.target.checked }))
@@ -239,22 +222,17 @@ export const SvgExporterModal: React.FC<SvgExporterModalProps> = ({
           </div>
 
           {/* SVG Canvas Preview */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 max-h-[48vh] overflow-auto flex items-center justify-center">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 max-h-[48vh] overflow-auto flex items-start justify-center">
             <div
               style={{
-                transform: `scale(${zoomLevel / 100})`,
-                transformOrigin: 'top center',
-                transition: 'transform 0.15s ease-out',
+                width: `${zoomLevel}%`,
+                maxWidth: 'none',
+                minWidth: '200px',
+                transition: 'width 0.15s ease-out',
               }}
-              className="bg-white rounded-lg shadow-xl overflow-hidden border border-zinc-300 max-w-full"
-            >
-              <img
-                src={svgDataUri}
-                alt="Font Glyph Matrix SVG Preview"
-                className="block max-w-none"
-                style={{ width: `${exportResult.grid.width}px`, height: `${exportResult.grid.height}px` }}
-              />
-            </div>
+              className="bg-white rounded-lg shadow-xl overflow-hidden border border-zinc-300 [&>svg]:w-full [&>svg]:h-auto [&>svg]:block"
+              dangerouslySetInnerHTML={{ __html: exportResult.svgString }}
+            />
           </div>
 
           {/* Dimension Telemetry */}

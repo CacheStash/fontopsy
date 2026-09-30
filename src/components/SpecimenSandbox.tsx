@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 're
 import type opentype from 'opentype.js';
 import type { ParsedFontResult } from '../types/font';
 import { LanguageMatrixView } from './LanguageMatrixView';
+import { BodyTextTester } from './BodyTextTester';
 import {
   AlignLeft,
   AlignCenter,
@@ -24,6 +25,7 @@ import {
   GripVertical,
   Sparkles,
   Type,
+  FileText,
 } from 'lucide-react';
 
 interface RasterMetricTileProps {
@@ -142,7 +144,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
   featureSettingsCss,
   variationSettingsCss = '"normal"',
 }) => {
-  const [activeTab, setActiveTab] = useState<'type_tester' | 'waterfall' | 'language_matrix'>('type_tester');
+  const [activeTab, setActiveTab] = useState<'type_tester' | 'body_tester' | 'waterfall' | 'language_matrix'>('type_tester');
   const [text, setText] = useState('The quick brown fox jumps over the lazy dog.');
   const [fontSize, setFontSize] = useState(48);
   const [letterSpacing, setLetterSpacing] = useState(0);
@@ -722,6 +724,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
           {(
             [
               ['type_tester', 'Type Tester & Layer Mode'],
+              ['body_tester', 'Body Text & Paragraphs'],
               ['waterfall', 'Waterfall Specimen (72px → 8px)'],
               ['language_matrix', 'Language & Features'],
             ] as const
@@ -736,6 +739,7 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
               }`}
             >
               {key === 'type_tester' && <Type size={14} />}
+              {key === 'body_tester' && <FileText size={14} />}
               {key === 'waterfall' && <Layers size={14} />}
               {key === 'language_matrix' && <Sparkles size={14} />}
               <span>{label}</span>
@@ -1252,7 +1256,17 @@ export const SpecimenSandbox: React.FC<SpecimenSandboxProps> = ({
         </div>
       )}
 
-      {/* 2. WATERFALL SPECIMEN */}
+      {/* 2. BODY TEXT & PARAGRAPH TESTER (FontDrop Multi-Size Waterfall + BlindTextGenerator) */}
+      {activeTab === 'body_tester' && (
+        <BodyTextTester
+          font={font}
+          fontFamily={activeFamilyFontName}
+          featureSettingsCss={globalActiveFeatureString}
+          variationSettingsCss={variationSettingsCss}
+        />
+      )}
+
+      {/* 3. WATERFALL SPECIMEN */}
       {activeTab === 'waterfall' && (
         <div className="p-6 rounded-2xl lab-card border-zinc-800 space-y-6">
           {WATERFALL_SIZES.map(size => (

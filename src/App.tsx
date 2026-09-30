@@ -9,7 +9,7 @@ import { GlyphModal } from './components/GlyphModal';
 import { SpecimenSandbox } from './components/SpecimenSandbox';
 import { FeatureInspector } from './components/FeatureInspector';
 import { TableInspector } from './components/TableInspector';
-import { LayerExporterModal } from './components/LayerExporterModal';
+import { SvgExporterModal } from './components/SvgExporterModal';
 import { VariableAxesController } from './components/VariableAxesController';
 import {
   Type,
@@ -17,9 +17,9 @@ import {
   Sparkles,
   Info,
   Database,
-  Layers,
   Cpu,
   AlertCircle,
+  FileCode,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -34,7 +34,7 @@ export const App: React.FC = () => {
 
   // Modals
   const [selectedGlyph, setSelectedGlyph] = useState<GlyphDetail | null>(null);
-  const [showLayerExporter, setShowLayerExporter] = useState<boolean>(false);
+  const [showSvgExporter, setShowSvgExporter] = useState<boolean>(false);
 
   // OpenType Feature Toggles
   const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>({});
@@ -235,7 +235,7 @@ export const App: React.FC = () => {
         isLightMode={isLightMode}
         onToggleTheme={() => setIsLightMode(prev => !prev)}
         onOpenFilePicker={() => fileInputRef.current?.click()}
-        onOpenExporter={() => setShowLayerExporter(true)}
+        onOpenExporter={() => setShowSvgExporter(true)}
         onLoadSample={loadSampleFont}
       />
 
@@ -337,14 +337,14 @@ export const App: React.FC = () => {
                 </button>
               </div>
 
-              {/* Quick Trigger: Layer Exporter Modal */}
+              {/* Quick Trigger: SVG Exporter Modal */}
               <button
-                onClick={() => setShowLayerExporter(true)}
+                onClick={() => setShowSvgExporter(true)}
                 className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-400 hover:bg-cyan-950/60 border border-cyan-800/60 transition-all"
-                title="Launch Layered Font Extraction Engine"
+                title="Launch Font SVG Matrix Exporter"
               >
-                <Layers size={14} />
-                <span>Launch Layer Exporter</span>
+                <FileCode size={14} />
+                <span>Launch SVG Exporter</span>
               </button>
             </div>
 
@@ -414,12 +414,12 @@ export const App: React.FC = () => {
         <span>CACHE-STASH VECTOR TYPOGRAPHY PIPELINE</span>
       </footer>
 
-      {/* Layer Exporter Modal */}
-      {showLayerExporter && parsedFont && (
-        <LayerExporterModal
+      {/* SVG Exporter Modal */}
+      {showSvgExporter && parsedFont && (
+        <SvgExporterModal
           font={parsedFont.font}
-          fontName={parsedFont.metadata.fullName}
-          onClose={() => setShowLayerExporter(false)}
+          fontName={parsedFont.metadata.fullName || parsedFont.metadata.familyName}
+          onClose={() => setShowSvgExporter(false)}
         />
       )}
 

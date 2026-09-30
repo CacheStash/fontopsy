@@ -42,6 +42,31 @@ export const App: React.FC = () => {
   // Variable Font Axes Values
   const [variationValues, setVariationValues] = useState<Record<string, number>>({});
 
+  // Theme mode (Dark by default, invertable to high-contrast Light mode)
+  const [isLightMode, setIsLightMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('fontopsy_theme') === 'light';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (isLightMode) {
+        document.documentElement.classList.add('light');
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('fontopsy_theme', 'light');
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('fontopsy_theme', 'dark');
+      }
+    } catch (e) {
+      console.warn('Failed to sync theme to localStorage', e);
+    }
+  }, [isLightMode]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load one or multiple font buffers (supporting full family styles & chromatic layers)
@@ -207,6 +232,8 @@ export const App: React.FC = () => {
         loadedFonts={loadedFonts}
         activeFontIndex={activeFontIndex}
         onSelectFontIndex={setActiveFontIndex}
+        isLightMode={isLightMode}
+        onToggleTheme={() => setIsLightMode(prev => !prev)}
         onOpenFilePicker={() => fileInputRef.current?.click()}
         onOpenExporter={() => setShowLayerExporter(true)}
         onLoadSample={loadSampleFont}

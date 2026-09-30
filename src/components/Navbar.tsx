@@ -1,12 +1,14 @@
 import React from 'react';
 import type { ParsedFontResult } from '../types/font';
-import { Layers, Upload, Sparkles } from 'lucide-react';
+import { Layers, Upload, Sparkles, Sun, Moon } from 'lucide-react';
 
 interface NavbarProps {
   parsedFont: ParsedFontResult | null;
   loadedFonts?: ParsedFontResult[];
   activeFontIndex?: number;
   onSelectFontIndex?: (index: number) => void;
+  isLightMode: boolean;
+  onToggleTheme: () => void;
   onOpenFilePicker: () => void;
   onOpenExporter: () => void;
   onLoadSample: () => void;
@@ -17,6 +19,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   loadedFonts = [],
   activeFontIndex = 0,
   onSelectFontIndex,
+  isLightMode,
+  onToggleTheme,
   onOpenFilePicker,
   onOpenExporter,
   onLoadSample,
@@ -124,6 +128,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Upload size={14} />
             <span className="hidden sm:inline">OPEN FONT</span>
+          </button>
+
+          {/* Light / Dark Mode Invert Toggle */}
+          <button
+            onClick={onToggleTheme}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium border transition-all flex items-center gap-1.5 ${
+              isLightMode
+                ? 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200 shadow-xs'
+                : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white hover:bg-zinc-700'
+            }`}
+            title={isLightMode ? 'Switch to Dark Mode' : 'Switch to Invert Light Mode'}
+          >
+            {isLightMode ? (
+              <Sun size={14} className="text-amber-600 animate-spin-slow" />
+            ) : (
+              <Moon size={14} className="text-cyan-400" />
+            )}
+            <span className="hidden sm:inline font-bold">{isLightMode ? 'LIGHT' : 'DARK'}</span>
           </button>
 
           {!parsedFont && (
